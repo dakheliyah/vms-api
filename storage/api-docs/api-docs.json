@@ -287,6 +287,77 @@
                     }
                 }
             }
+        },
+        "/api/mumineen/family-by-its-id/{its_id}": {
+            "get": {
+                "tags": [
+                    "Mumineen"
+                ],
+                "summary": "Get all family members by its_id",
+                "description": "Finds the HOF ITS ID for the given member and returns all members sharing that HOF ITS ID",
+                "operationId": "getMumineenFamilyByItsId",
+                "parameters": [
+                    {
+                        "name": "its_id",
+                        "in": "path",
+                        "description": "ITS ID of the Mumineen to find family members for",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int64",
+                            "example": 20324227
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Mumineen"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Family members retrieved successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Mumineen not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Mumineen not found or no HOF ITS ID available"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -295,22 +366,25 @@
                 "title": "Mumineen",
                 "description": "Mumineen model",
                 "properties": {
-                    "id": {
+                    "its_id": {
+                        "description": "8-digit ITS ID (primary key)",
                         "type": "integer",
                         "format": "int64",
-                        "example": 1
-                    },
-                    "its_id": {
-                        "type": "string",
-                        "example": "ITS123456"
+                        "example": 20324227
                     },
                     "eits_id": {
-                        "type": "string",
-                        "example": "EITS123456"
+                        "description": "8-digit EITS ID",
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 20324228,
+                        "nullable": true
                     },
                     "hof_its_id": {
-                        "type": "string",
-                        "example": "HOF123456"
+                        "description": "8-digit HOF ITS ID",
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 20324229,
+                        "nullable": true
                     },
                     "full_name": {
                         "type": "string",

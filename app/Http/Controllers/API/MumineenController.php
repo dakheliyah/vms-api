@@ -90,9 +90,9 @@ class MumineenController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'its_id' => 'required|string|unique:mumineens,its_id',
-            'eits_id' => 'nullable|string',
-            'hof_its_id' => 'nullable|string',
+            'its_id' => 'required|integer|digits:8|unique:mumineens,its_id',
+            'eits_id' => 'nullable|integer|digits:8',
+            'hof_its_id' => 'nullable|integer|digits:8',
             'full_name' => 'required|string|max:255',
             'gender' => 'required|in:male,female,other',
             'age' => 'nullable|integer',
@@ -220,8 +220,8 @@ class MumineenController extends Controller
     public function update(Request $request, string $id): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'eits_id' => 'nullable|string',
-            'hof_its_id' => 'nullable|string',
+            'eits_id' => 'nullable|integer|digits:8',
+            'hof_its_id' => 'nullable|integer|digits:8',
             'full_name' => 'string|max:255',
             'gender' => 'in:male,female,other',
             'age' => 'nullable|integer',
@@ -300,6 +300,78 @@ class MumineenController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Mumineen record deleted successfully'
+        ]);
+    }
+    
+    /**
+     * Get all family members of a Mumineen by its_id.
+     * 
+     * @OA\Get(
+     *     path="/api/mumineen/family-by-its-id/{its_id}",
+     *     tags={"Mumineen"},
+     *     summary="Get all family members by its_id",
+     *     description="Finds the HOF ITS ID for the given member and returns all members sharing that HOF ITS ID",
+     *     operationId="getMumineenFamilyByItsId",
+     *     @OA\Parameter(
+     *         name="its_id",
+     *         in="path",
+     *         description="ITS ID of the Mumineen to find family members for",
+     *         required=true,
+     *         @OA\Schema(type="integer", format="int64", example=20324227)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful operation",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/Mumineen")),
+     *             @OA\Property(property="message", type="string", example="Family members retrieved successfully")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Mumineen not found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Mumineen not found or no HOF ITS ID available")
+     *         )
+     *     )
+     * )
+     *
+     * @param string $id
+     * @return JsonResponse
+     */
+    public function getFamilyByItsId(string $id): JsonResponse
+    {
+        // Find the member by its_id
+        $mumineen = Mumineen::where('its_id', $id)->first();
+
+        if (!$mumineen) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mumineen not found'
+            ], 404);
+        }
+        
+        // Get the HOF ITS ID - either the member's own HOF ID or if they are the HOF themselves
+        $hofItsId = $mumineen->hof_its_id ?? $mumineen->its_id;
+        
+        if (!$hofItsId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No HOF ITS ID available for this member'
+            ], 404);
+        }
+        
+        // Find all members who share the same HOF ITS ID
+        $familyMembers = Mumineen::where('hof_its_id', $hofItsId)
+            ->orWhere('its_id', $hofItsId) // Include the head of family as well
+            ->get();
+        
+        return response()->json([
+            'success' => true,
+            'data' => $familyMembers,
+            'message' => 'Family members retrieved successfully'
         ]);
     }
 }

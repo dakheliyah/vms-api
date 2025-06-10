@@ -12,19 +12,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('mumineens', function (Blueprint $table) {
-            $table->id();
-            $table->string('its_id')->unique();
-            $table->string('eits_id')->nullable();
-            $table->string('hof_its_id')->nullable();
+            // Using its_id as primary key with integer data type for 8-digit number
+            $table->integer('its_id')->primary();
+            $table->integer('eits_id')->nullable();
+            $table->integer('hof_its_id')->nullable();
             $table->string('full_name');
             $table->enum('gender', ['male', 'female', 'other']);
             $table->integer('age')->nullable();
             $table->string('mobile')->nullable();
             $table->string('country')->nullable();
             $table->timestamps();
-            
-            // Add index to improve query performance
-            $table->index('its_id');
         });
     }
 
