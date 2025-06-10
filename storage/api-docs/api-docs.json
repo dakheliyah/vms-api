@@ -1,0 +1,361 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Mumineen API",
+        "description": "API for managing Mumineen records",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/api/mumineen": {
+            "get": {
+                "tags": [
+                    "Mumineen"
+                ],
+                "summary": "Get all Mumineen records",
+                "description": "Returns all Mumineen records from the database",
+                "operationId": "getMumineenList",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Mumineen"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Mumineen"
+                ],
+                "summary": "Create a new Mumineen record",
+                "description": "Store a new Mumineen record in the database",
+                "operationId": "storeMumineen",
+                "requestBody": {
+                    "description": "Mumineen data",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "its_id",
+                                    "full_name",
+                                    "gender"
+                                ],
+                                "properties": {
+                                    "its_id": {
+                                        "type": "string",
+                                        "example": "ITS123456"
+                                    },
+                                    "eits_id": {
+                                        "type": "string",
+                                        "example": "EITS123456"
+                                    },
+                                    "hof_its_id": {
+                                        "type": "string",
+                                        "example": "HOF123456"
+                                    },
+                                    "full_name": {
+                                        "type": "string",
+                                        "example": "John Doe"
+                                    },
+                                    "gender": {
+                                        "type": "string",
+                                        "enum": [
+                                            "male",
+                                            "female",
+                                            "other"
+                                        ],
+                                        "example": "male"
+                                    },
+                                    "age": {
+                                        "type": "integer",
+                                        "example": 30
+                                    },
+                                    "mobile": {
+                                        "type": "string",
+                                        "example": "+1234567890"
+                                    },
+                                    "country": {
+                                        "type": "string",
+                                        "example": "United States"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Mumineen record created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Mumineen"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/mumineen/{its_id}": {
+            "get": {
+                "tags": [
+                    "Mumineen"
+                ],
+                "summary": "Get a Mumineen record",
+                "description": "Returns a specific Mumineen record by ITS ID",
+                "operationId": "getMumineen",
+                "parameters": [
+                    {
+                        "name": "its_id",
+                        "in": "path",
+                        "description": "ITS ID of Mumineen to retrieve",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Mumineen"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Mumineen not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Mumineen not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Mumineen"
+                ],
+                "summary": "Update a Mumineen record",
+                "description": "Update a specific Mumineen record by ITS ID",
+                "operationId": "updateMumineen",
+                "parameters": [
+                    {
+                        "name": "its_id",
+                        "in": "path",
+                        "description": "ITS ID of Mumineen to update",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Mumineen data",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "eits_id": {
+                                        "type": "string",
+                                        "example": "EITS123456"
+                                    },
+                                    "hof_its_id": {
+                                        "type": "string",
+                                        "example": "HOF123456"
+                                    },
+                                    "full_name": {
+                                        "type": "string",
+                                        "example": "John Doe"
+                                    },
+                                    "gender": {
+                                        "type": "string",
+                                        "enum": [
+                                            "male",
+                                            "female",
+                                            "other"
+                                        ],
+                                        "example": "male"
+                                    },
+                                    "age": {
+                                        "type": "integer",
+                                        "example": 30
+                                    },
+                                    "mobile": {
+                                        "type": "string",
+                                        "example": "+1234567890"
+                                    },
+                                    "country": {
+                                        "type": "string",
+                                        "example": "United States"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Mumineen record updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Mumineen"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Mumineen not found"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Mumineen"
+                ],
+                "summary": "Delete a Mumineen record",
+                "description": "Delete a specific Mumineen record by ITS ID",
+                "operationId": "deleteMumineen",
+                "parameters": [
+                    {
+                        "name": "its_id",
+                        "in": "path",
+                        "description": "ITS ID of Mumineen to delete",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Mumineen record deleted successfully"
+                    },
+                    "404": {
+                        "description": "Mumineen not found"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Mumineen": {
+                "title": "Mumineen",
+                "description": "Mumineen model",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int64",
+                        "example": 1
+                    },
+                    "its_id": {
+                        "type": "string",
+                        "example": "ITS123456"
+                    },
+                    "eits_id": {
+                        "type": "string",
+                        "example": "EITS123456"
+                    },
+                    "hof_its_id": {
+                        "type": "string",
+                        "example": "HOF123456"
+                    },
+                    "full_name": {
+                        "type": "string",
+                        "example": "John Doe"
+                    },
+                    "gender": {
+                        "type": "string",
+                        "enum": [
+                            "male",
+                            "female",
+                            "other"
+                        ],
+                        "example": "male"
+                    },
+                    "age": {
+                        "type": "integer",
+                        "example": 30
+                    },
+                    "mobile": {
+                        "type": "string",
+                        "example": "+1234567890"
+                    },
+                    "country": {
+                        "type": "string",
+                        "example": "United States"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2025-06-10T16:30:00.000000Z"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2025-06-10T16:30:00.000000Z"
+                    }
+                },
+                "type": "object"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Mumineen",
+            "description": "Mumineen"
+        }
+    ]
+}
