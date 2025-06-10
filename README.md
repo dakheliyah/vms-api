@@ -1,66 +1,170 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Mumineen API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## Project Overview
 
-## About Laravel
+A Laravel-based REST API with PostgreSQL integration for managing Mumineen records. The API provides comprehensive CRUD operations with Swagger documentation for all endpoints.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Features
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- Full CRUD operations for Mumineen records
+- Family member lookup functionality
+- API documentation with Swagger UI
+- PostgreSQL database integration
+- Based on Laravel 10
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Technology Stack
 
-## Learning Laravel
+- **Framework**: Laravel 10.x
+- **Database**: PostgreSQL (Remote Cloud Instance)
+- **Documentation**: OpenAPI/Swagger (darkaonline/l5-swagger)
+- **PHP Version**: 8.1.6 (XAMPP bundled)
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Requirements
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+- PHP >= 8.1
+- Composer
+- PostgreSQL PDO Extension
+- Laravel requirements (BCMath, Ctype, JSON, Mbstring, OpenSSL, PDO, Tokenizer, XML)
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Database Schema
 
-## Laravel Sponsors
+The `mumineens` table has the following structure:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+| Column      | Type      | Description                                  |
+|-------------|-----------|----------------------------------------------|
+| its_id      | integer   | Primary key, 8-digit unique ID               |
+| eits_id     | integer   | Optional 8-digit ID                          |
+| hof_its_id  | integer   | Head of Family ITS ID (for family grouping)  |
+| full_name   | string    | Full name of the person                      |
+| gender      | enum      | Male, Female or Other                        |
+| age         | integer   | Age of the person                            |
+| mobile      | string    | Contact number                               |
+| country     | string    | Country of residence                         |
+| created_at  | timestamp | Record creation timestamp                     |
+| updated_at  | timestamp | Record last updated timestamp                 |
 
-### Premium Partners
+## Installation
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+1. Clone the repository
+   ```bash
+   git clone [repository-url]
+   cd api-2
+   ```
 
-## Contributing
+2. Install dependencies
+   ```bash
+   composer install
+   ```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+3. Configure environment
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
 
-## Code of Conduct
+4. Configure database in `.env`
+   ```
+   DB_CONNECTION=pgsql
+   DB_HOST=your-postgres-host
+   DB_PORT=5432
+   DB_DATABASE=your-database
+   DB_USERNAME=your-username
+   DB_PASSWORD=your-password
+   ```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+5. Run migrations
+   ```bash
+   php artisan migrate
+   ```
 
-## Security Vulnerabilities
+6. Generate Swagger documentation
+   ```bash
+   php artisan l5-swagger:generate
+   ```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+7. Start the server
+   ```bash
+   php artisan serve
+   ```
+
+## API Endpoints
+
+| Method | Endpoint                              | Description                        |
+|--------|---------------------------------------|------------------------------------|  
+| GET    | /api/mumineen                         | List all Mumineen                  |
+| POST   | /api/mumineen                         | Create a new Mumineen              |
+| GET    | /api/mumineen/{its_id}                | Get a specific Mumineen by its_id  |
+| PUT    | /api/mumineen/{its_id}                | Update a Mumineen record           |
+| DELETE | /api/mumineen/{its_id}                | Delete a Mumineen record           |
+| GET    | /api/mumineen/family-by-its-id/{its_id} | Get all family members by its_id   |
+
+## Family Lookup Functionality
+
+The `/api/mumineen/family-by-its-id/{its_id}` endpoint implements a specialized lookup:
+
+1. It takes an individual's ITS ID as input
+2. Finds that individual's Head of Family (HOF) ITS ID
+3. Returns all members who share the same HOF ITS ID
+
+This allows for retrieving entire family groups in a single API call.
+
+## Project Structure
+
+- **Models**: `app/Models/Mumineen.php`
+- **Controllers**: `app/Http/Controllers/API/MumineenController.php`
+- **Routes**: `routes/api.php`
+- **Migrations**: `database/migrations/2025_06_10_162017_create_mumineens_table.php`
+- **Swagger Documentation**: 
+  - Configuration: `config/l5-swagger.php`
+  - Model Annotations: `app/Models/Swagger/Mumineen.php`
+  - Controller Annotations: Inline in `MumineenController.php`
+
+## API Documentation
+
+Swagger UI documentation is available at `/api/documentation` when the server is running.
+
+## Validation Rules
+
+The API implements validation for all inputs:
+
+- `its_id`: Required, 8-digit integer, unique
+- `eits_id`: Optional, 8-digit integer
+- `hof_its_id`: Optional, 8-digit integer
+- `full_name`: Required, string, max 255 characters
+- `gender`: Required, enum (male, female, other)
+- `age`: Optional, integer
+- `mobile`: Optional, string
+- `country`: Optional, string
+
+## Response Format
+
+All API responses follow a consistent JSON format:
+
+```json
+{
+  "success": true|false,
+  "message": "Operation status message",
+  "data": [] // Data payload or error details
+}
+```
+
+## Error Handling
+
+The API returns appropriate HTTP status codes:
+
+- 200: Success
+- 201: Created (for POST requests)
+- 400: Bad Request (validation errors)
+- 404: Not Found
+- 500: Server Error
+
+## Development and Maintenance
+
+- Created: June 10, 2025
+- Current Version: 1.0.0
+- Maintained by: [Your Organization Name]
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This project is proprietary and confidential. Unauthorized copying, distribution, or use is strictly prohibited.
+
