@@ -24,7 +24,7 @@ class PassPreferenceController extends Controller
         }
 
         $vaazCenters = VaazCenter::where('event_id', $request->input('event_id'))
-            ->with(['blockTypes' => function ($query) {
+            ->with(['blocks' => function ($query) {
                 $query->withCount('passPreferences');
             }])
             ->get();
@@ -33,13 +33,13 @@ class PassPreferenceController extends Controller
             return [
                 'id' => $vaazCenter->id,
                 'name' => $vaazCenter->name,
-                'blocks' => $vaazCenter->blockTypes->map(function ($blockType) {
+                'blocks' => $vaazCenter->blocks->map(function ($block) {
                     return [
-                        'id' => $blockType->id,
-                        'type' => $blockType->type,
-                        'capacity' => $blockType->capacity,
-                        'issued_passes' => $blockType->pass_preferences_count,
-                        'availability' => $blockType->capacity - $blockType->pass_preferences_count,
+                        'id' => $block->id,
+                        'type' => $block->type,
+                        'capacity' => $block->capacity,
+                        'issued_passes' => $block->pass_preferences_count,
+                        'availability' => $block->capacity - $block->pass_preferences_count,
                     ];
                 }),
             ];
@@ -79,7 +79,7 @@ class PassPreferenceController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'its_no' => 'required|integer|unique:pass_preferences,its_no',
-            'block_id' => 'required|exists:block_types,id',
+            'block_id' => 'required|exists:blocks,id',
         ]);
 
         if ($validator->fails()) {

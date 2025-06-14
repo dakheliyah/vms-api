@@ -30,13 +30,26 @@ class Mumineen extends Model
      */
     protected $fillable = [
         'its_id',
-        'eits_id',
-        'hof_its_id',
-        'full_name',
+        'hof_id', // Renamed from hof_its_id
+        'fullname', // Renamed from full_name
         'gender',
         'age',
-        'mobile',
-        'country',
+        'jamaat',
+        'idara',
+        'category',
+        'prefix',
+        'title',
+        'venue_waaz',
+        'city',
+        'local_mehman',
+        'arr_place_date',
+        'flight_code',
+        'whatsapp_link_clicked',
+        'daily_trans',
+        'acc_arranged_at',
+        'acc_zone',
+        'mobile', // Existing field, moved to maintain some logical grouping
+        'country', // Existing field
     ];
 
     /**

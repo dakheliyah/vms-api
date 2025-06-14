@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\BlockType;
+use App\Models\Block;
 
 class PassPreference extends Model
 {
@@ -23,8 +23,8 @@ class PassPreference extends Model
     /**
      * Get the block type that the pass preference belongs to.
      */
-    public function blockType()
+    public function block()
     {
-        return $this->belongsTo(BlockType::class);
+        return $this->belongsTo(Block::class, 'block_id');
     }
 }

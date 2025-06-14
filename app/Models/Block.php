@@ -7,9 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\VaazCenter;
 use App\Models\PassPreference;
 
-class BlockType extends Model
+class Block extends Model
 {
         use HasFactory;
+
+    protected $table = 'blocks';
 
     /**
      * The attributes that are mass assignable.
@@ -38,6 +40,6 @@ class BlockType extends Model
      */
     public function passPreferences()
     {
-        return $this->hasMany(PassPreference::class);
+        return $this->hasMany(PassPreference::class, 'block_id');
     }
 }

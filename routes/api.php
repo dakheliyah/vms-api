@@ -4,7 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\MumineenController;
 use App\Http\Controllers\API\VaazCenterController;
-use App\Http\Controllers\API\BlockTypeController;
+use App\Http\Controllers\API\BlockController;
 use App\Http\Controllers\API\PassPreferenceController;
 use App\Http\Controllers\API\EventController;
 
@@ -45,12 +45,12 @@ Route::prefix('vaaz-centers')->group(function () {
     Route::delete('/', [VaazCenterController::class, 'destroy']);
 });
 
-// Block Type API Routes
-Route::prefix('block-types')->group(function () {
-    Route::get('/', [BlockTypeController::class, 'index']);
-    Route::post('/', [BlockTypeController::class, 'store']);
-    Route::put('/', [BlockTypeController::class, 'update']);
-    Route::delete('/', [BlockTypeController::class, 'destroy']);
+// Block API Routes
+Route::prefix('blocks')->group(function () {
+    Route::get('/', [BlockController::class, 'index']);
+    Route::post('/', [BlockController::class, 'store']);
+    Route::put('/', [BlockController::class, 'update']);
+    Route::delete('/', [BlockController::class, 'destroy']);
 });
 
 // Pass Preference API Routes

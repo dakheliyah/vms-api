@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Models\Event;
-use App\Models\BlockType;
+use App\Models\Block;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -36,8 +36,8 @@ class VaazCenter extends Model
     /**
      * Get the block types for the vaaz center.
      */
-    public function blockTypes()
+    public function blocks()
     {
-        return $this->hasMany(BlockType::class);
+        return $this->hasMany(Block::class);
     }
 }
