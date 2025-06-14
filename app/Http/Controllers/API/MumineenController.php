@@ -18,31 +18,69 @@ use Illuminate\Support\Facades\Validator;
 class MumineenController extends Controller
 {
     /**
-     * Display a listing of the Mumineen.
+     * Display either a listing of all Mumineen or a specific one based on query parameter.
      * 
      * @OA\Get(
      *     path="/api/mumineen",
      *     tags={"Mumineen"},
-     *     summary="Get all Mumineen records",
-     *     description="Returns all Mumineen records from the database",
-     *     operationId="getMumineenList",
+     *     summary="Get all Mumineen records or a specific one",
+     *     description="Returns all Mumineen records or a specific one if its_id query parameter is provided",
+     *     operationId="getMumineenOrList",
+     *     @OA\Parameter(
+     *         name="its_id",
+     *         in="query",
+     *         description="ITS ID of Mumineen to retrieve (optional)",
+     *         required=false,
+     *         @OA\Schema(type="string")
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
-     *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/Mumineen"))
+     *         @OA\JsonContent(type="object")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Mumineen not found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(property="message", type="string", example="Mumineen not found")
+     *         )
      *     )
      * )
      *
+     * @param Request $request
      * @return JsonResponse
      */
-    public function index(): JsonResponse
+    public function indexOrShow(Request $request): JsonResponse
     {
-        $mumineen = Mumineen::all();
-        return response()->json([
-            'success' => true,
-            'data' => $mumineen,
-            'message' => 'Mumineen records retrieved successfully'
-        ]);
+        // Check if its_id parameter is present
+        $id = $request->input('its_id');
+        
+        if (empty($id)) {
+            // If no its_id provided, return all records (like the original index method)
+            $mumineen = Mumineen::all();
+            return response()->json([
+                'success' => true,
+                'data' => $mumineen,
+                'message' => 'Mumineen records retrieved successfully'
+            ]);
+        } else {
+            // If its_id is provided, return specific record (like the original show method)
+            $mumineen = Mumineen::where('its_id', $id)->first();
+            
+            if (!$mumineen) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Mumineen not found'
+                ], 404);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'data' => $mumineen,
+                'message' => 'Mumineen record retrieved successfully'
+            ]);
+        }
     }
 
     /**
@@ -148,11 +186,21 @@ class MumineenController extends Controller
      *     )
      * )
      *
-     * @param string $id
+     * @param Request $request
      * @return JsonResponse
      */
-    public function show(string $id): JsonResponse
+    public function show(Request $request): JsonResponse
     {
+        // Get the its_id from query parameters
+        $id = $request->input('its_id');
+        
+        if (empty($id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'its_id parameter is required'
+            ], 400);
+        }
+        
         $mumineen = Mumineen::where('its_id', $id)->first();
 
         if (!$mumineen) {
@@ -338,11 +386,21 @@ class MumineenController extends Controller
      *     )
      * )
      *
-     * @param string $id
+     * @param Request $request
      * @return JsonResponse
      */
-    public function getFamilyByItsId(string $id): JsonResponse
+    public function getFamilyByItsId(Request $request): JsonResponse
     {
+        // Get the its_id from query parameters
+        $id = $request->input('its_id');
+        
+        if (empty($id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'its_id parameter is required'
+            ], 400);
+        }
+        
         // Find the member by its_id
         $mumineen = Mumineen::where('its_id', $id)->first();
 

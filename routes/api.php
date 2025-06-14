@@ -21,13 +21,12 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 // Mumineen API Routes
 Route::prefix('mumineen')->group(function () {
-    Route::get('/', [MumineenController::class, 'index']);
     Route::post('/', [MumineenController::class, 'store']);
     
-    // Apply decryption middleware to routes that use its_id in GET requests
+    // Apply decryption middleware to routes that use its_id in GET query parameters
     Route::middleware('decrypt.its_id')->group(function () {
-        Route::get('/family-by-its-id/{its_id}', [MumineenController::class, 'getFamilyByItsId']);
-        Route::get('/{its_id}', [MumineenController::class, 'show']);
+        Route::get('/', [MumineenController::class, 'indexOrShow']); // Using ?its_id=value or no params for index
+        Route::get('/family-by-its-id', [MumineenController::class, 'getFamilyByItsId']); // Using ?its_id=value
     });
     
     Route::put('/{its_id}', [MumineenController::class, 'update']);
