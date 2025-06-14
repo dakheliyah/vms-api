@@ -3,6 +3,10 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\MumineenController;
+use App\Http\Controllers\API\VaazCenterController;
+use App\Http\Controllers\API\BlockTypeController;
+use App\Http\Controllers\API\PassPreferenceController;
+use App\Http\Controllers\API\EventController;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,4 +35,37 @@ Route::prefix('mumineen')->group(function () {
     
     Route::put('/{its_id}', [MumineenController::class, 'update']);
     Route::delete('/{its_id}', [MumineenController::class, 'destroy']);
+});
+
+// Vaaz Center API Routes
+Route::prefix('vaaz-centers')->group(function () {
+    Route::get('/', [VaazCenterController::class, 'indexOrShow']);
+    Route::post('/', [VaazCenterController::class, 'store']);
+    Route::put('/', [VaazCenterController::class, 'update']);
+    Route::delete('/', [VaazCenterController::class, 'destroy']);
+});
+
+// Block Type API Routes
+Route::prefix('block-types')->group(function () {
+    Route::get('/', [BlockTypeController::class, 'index']);
+    Route::post('/', [BlockTypeController::class, 'store']);
+    Route::put('/', [BlockTypeController::class, 'update']);
+    Route::delete('/', [BlockTypeController::class, 'destroy']);
+});
+
+// Pass Preference API Routes
+Route::prefix('pass-preferences')->group(function () {
+    Route::get('/', [PassPreferenceController::class, 'indexOrShow']);
+    Route::get('/summary', [PassPreferenceController::class, 'summary']);
+    Route::post('/', [PassPreferenceController::class, 'store']);
+    Route::put('/', [PassPreferenceController::class, 'update']);
+    Route::delete('/', [PassPreferenceController::class, 'destroy']);
+});
+
+// Event API Routes
+Route::prefix('events')->group(function () {
+    Route::get('/', [EventController::class, 'index']);
+    Route::post('/', [EventController::class, 'store']);
+    Route::put('/', [EventController::class, 'update']);
+    Route::delete('/', [EventController::class, 'destroy']);
 });
