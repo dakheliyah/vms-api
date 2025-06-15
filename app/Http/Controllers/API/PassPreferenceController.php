@@ -54,8 +54,8 @@ class PassPreferenceController extends Controller
      */
     public function index(Request $request)
     {
-        if ($request->has('its_no')) {
-            $passPreference = PassPreference::where('its_no', $request->input('its_no'))->with('block')->first(); // Eager load block
+        if ($request->has('its_id')) {
+            $passPreference = PassPreference::where('its_id', $request->input('its_id'))->with('block')->first(); // Eager load block
             if (!$passPreference) {
                 return response()->json(['message' => 'Pass Preference not found for this ITS number'], 404);
             }
@@ -72,7 +72,7 @@ class PassPreferenceController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'its_no' => 'required|integer|unique:pass_preferences,its_no',
+            'its_id' => 'required|integer|unique:pass_preferences,its_id',
             'block_id' => 'required|exists:blocks,id',
         ]);
 
@@ -104,7 +104,7 @@ class PassPreferenceController extends Controller
     public function update(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'its_no' => 'required|integer|exists:pass_preferences,its_no',
+            'its_id' => 'required|integer|exists:pass_preferences,its_id',
             'block_id' => 'required|exists:blocks,id', // User must always provide the new block_id
         ]);
 
@@ -113,9 +113,9 @@ class PassPreferenceController extends Controller
         }
 
         $validatedData = $validator->validated();
-        $passPreference = PassPreference::where('its_no', $validatedData['its_no'])->first();
+        $passPreference = PassPreference::where('its_id', $validatedData['its_id'])->first();
 
-        // This check is technically covered by 'exists:pass_preferences,its_no' but good for clarity
+        // This check is technically covered by 'exists:pass_preferences,its_id' but good for clarity
         if (!$passPreference) {
             return response()->json(['message' => 'Pass Preference not found for the given ITS number.'], 404);
         }
@@ -133,7 +133,7 @@ class PassPreferenceController extends Controller
             }
         }
 
-        // Update only the block_id. ITS_NO is the identifier and should not be changed here.
+        // Update only the block_id. ITS_ID is the identifier and should not be changed here.
         $passPreference->block_id = $validatedData['block_id'];
         $passPreference->save();
 
@@ -146,14 +146,14 @@ class PassPreferenceController extends Controller
     public function destroy(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'its_no' => 'required|integer|exists:pass_preferences,its_no',
+            'its_id' => 'required|integer|exists:pass_preferences,its_id',
         ]);
 
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422); // Or 400 for bad request format
         }
 
-        $passPreference = PassPreference::where('its_no', $request->input('its_no'))->first();
+        $passPreference = PassPreference::where('its_id', $request->input('its_id'))->first();
 
         // This check is technically covered by 'exists' rule, but good for explicit error message
         if (!$passPreference) {

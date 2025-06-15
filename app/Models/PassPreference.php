@@ -16,7 +16,7 @@ class PassPreference extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'its_no',
+        'its_id',
         'block_id',
     ];
 
