@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Models\PassPreference;
 use App\Models\VaazCenter;
+use App\Models\Block;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -53,23 +54,16 @@ class PassPreferenceController extends Controller
      */
     public function index(Request $request)
     {
-        if ($request->has('id')) {
-            $passPreference = PassPreference::find($request->input('id'));
-            if (!$passPreference) {
-                return response()->json(['message' => 'Pass Preference not found'], 404);
-            }
-            return response()->json($passPreference);
-        }
-
         if ($request->has('its_no')) {
-            $passPreference = PassPreference::where('its_no', $request->input('its_no'))->first();
+            $passPreference = PassPreference::where('its_no', $request->input('its_no'))->with('block')->first(); // Eager load block
             if (!$passPreference) {
                 return response()->json(['message' => 'Pass Preference not found for this ITS number'], 404);
             }
             return response()->json($passPreference);
         }
 
-        return PassPreference::all();
+        // Consider pagination for `all()` if the list can grow large
+        return PassPreference::with('block')->get(); // Eager load block for all
     }
 
     /**
@@ -86,7 +80,20 @@ class PassPreferenceController extends Controller
             return response()->json($validator->errors(), 422);
         }
 
-        $passPreference = PassPreference::create($validator->validated());
+        $validatedData = $validator->validated();
+        $block = Block::find($validatedData['block_id']);
+
+        if (!$block) { // Should not happen due to 'exists' rule, but good practice
+            return response()->json(['message' => 'Selected block not found.'], 404);
+        }
+
+        // Capacity Check
+        $currentPassesCount = PassPreference::where('block_id', $block->id)->count();
+        if ($currentPassesCount >= $block->capacity) {
+            return response()->json(['message' => 'Selected block is full. Cannot issue more passes.'], 422);
+        }
+
+        $passPreference = PassPreference::create($validatedData);
 
         return response()->json($passPreference, 201);
     }
@@ -96,24 +103,39 @@ class PassPreferenceController extends Controller
      */
     public function update(Request $request)
     {
-        if (!$request->has('id')) {
-            return response()->json(['message' => 'Pass Preference ID is required'], 400);
-        }
-        $passPreference = PassPreference::find($request->input('id'));
-        if (!$passPreference) {
-            return response()->json(['message' => 'Pass Preference not found'], 404);
-        }
-
         $validator = Validator::make($request->all(), [
-            'its_no' => 'sometimes|required|integer|unique:pass_preferences,its_no,' . $passPreference->id,
-            'block_id' => 'sometimes|required|exists:block_types,id',
+            'its_no' => 'required|integer|exists:pass_preferences,its_no',
+            'block_id' => 'required|exists:blocks,id', // User must always provide the new block_id
         ]);
 
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);
         }
 
-        $passPreference->update($validator->validated());
+        $validatedData = $validator->validated();
+        $passPreference = PassPreference::where('its_no', $validatedData['its_no'])->first();
+
+        // This check is technically covered by 'exists:pass_preferences,its_no' but good for clarity
+        if (!$passPreference) {
+            return response()->json(['message' => 'Pass Preference not found for the given ITS number.'], 404);
+        }
+
+        // If block_id is being changed, check capacity of the new block
+        if ($passPreference->block_id != $validatedData['block_id']) {
+            $newBlock = Block::find($validatedData['block_id']);
+            if (!$newBlock) { // Should not happen due to 'exists' rule
+                return response()->json(['message' => 'New selected block not found.'], 404);
+            }
+
+            $currentPassesInNewBlock = PassPreference::where('block_id', $newBlock->id)->count();
+            if ($currentPassesInNewBlock >= $newBlock->capacity) {
+                return response()->json(['message' => 'New selected block is full. Cannot move pass.'], 422);
+            }
+        }
+
+        // Update only the block_id. ITS_NO is the identifier and should not be changed here.
+        $passPreference->block_id = $validatedData['block_id'];
+        $passPreference->save();
 
         return response()->json($passPreference);
     }
@@ -123,12 +145,19 @@ class PassPreferenceController extends Controller
      */
     public function destroy(Request $request)
     {
-        if (!$request->has('id')) {
-            return response()->json(['message' => 'Pass Preference ID is required'], 400);
+        $validator = Validator::make($request->all(), [
+            'its_no' => 'required|integer|exists:pass_preferences,its_no',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422); // Or 400 for bad request format
         }
-        $passPreference = PassPreference::find($request->input('id'));
+
+        $passPreference = PassPreference::where('its_no', $request->input('its_no'))->first();
+
+        // This check is technically covered by 'exists' rule, but good for explicit error message
         if (!$passPreference) {
-            return response()->json(['message' => 'Pass Preference not found'], 404);
+            return response()->json(['message' => 'Pass Preference not found for the given ITS number.'], 404);
         }
 
         $passPreference->delete();

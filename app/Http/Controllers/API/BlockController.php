@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Block;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class BlockController extends Controller
 {
@@ -41,7 +42,7 @@ class BlockController extends Controller
             'capacity' => 'required|integer|min:0', // Assuming 'capacity' is required
             'min_age' => 'nullable|integer',
             'max_age' => 'nullable|integer',
-            'gender' => 'nullable|string|max:255',
+            'gender' => ['nullable', Rule::in(['male', 'female', 'both'])],
         ]);
 
         if ($validator->fails()) {
@@ -72,7 +73,7 @@ class BlockController extends Controller
             'capacity' => 'sometimes|required|integer',
             'min_age' => 'nullable|integer',
             'max_age' => 'nullable|integer',
-            'gender' => 'nullable|string|max:255',
+            'gender' => ['nullable', Rule::in(['male', 'female', 'both'])],
         ]);
 
         if ($validator->fails()) {
