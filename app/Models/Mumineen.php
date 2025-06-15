@@ -60,7 +60,7 @@ class Mumineen extends Model
     protected $casts = [
         'its_id' => 'integer',
         'eits_id' => 'integer',
-        'hof_its_id' => 'integer',
+        'hof_id' => 'integer',
         'age' => 'integer',
     ];
 }

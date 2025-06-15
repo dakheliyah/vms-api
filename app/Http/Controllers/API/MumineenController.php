@@ -99,7 +99,7 @@ class MumineenController extends Controller
      *             required={"its_id", "full_name", "gender"},
      *             @OA\Property(property="its_id", type="string", example="ITS123456"),
      *             @OA\Property(property="eits_id", type="string", example="EITS123456"),
-     *             @OA\Property(property="hof_its_id", type="string", example="HOF123456"),
+     *             @OA\Property(property="hof_id", type="string", example="HOF123456"),
      *             @OA\Property(property="full_name", type="string", example="John Doe"),
      *             @OA\Property(property="gender", type="string", example="male", enum={"male", "female", "other"}),
      *             @OA\Property(property="age", type="integer", example=30),
@@ -130,7 +130,7 @@ class MumineenController extends Controller
         $validator = Validator::make($request->all(), [
             'its_id' => 'required|integer|digits:8|unique:mumineens,its_id',
             'eits_id' => 'nullable|integer|digits:8',
-            'hof_its_id' => 'nullable|integer|digits:8',
+            'hof_id' => 'nullable|integer|digits:8',
             'full_name' => 'required|string|max:255',
             'gender' => 'required|in:male,female,other',
             'age' => 'nullable|integer',
@@ -238,7 +238,7 @@ class MumineenController extends Controller
      *         description="Mumineen data",
      *         @OA\JsonContent(
      *             @OA\Property(property="eits_id", type="string", example="EITS123456"),
-     *             @OA\Property(property="hof_its_id", type="string", example="HOF123456"),
+     *             @OA\Property(property="hof_id", type="string", example="HOF123456"),
      *             @OA\Property(property="full_name", type="string", example="John Doe"),
      *             @OA\Property(property="gender", type="string", example="male", enum={"male", "female", "other"}),
      *             @OA\Property(property="age", type="integer", example=30),
@@ -269,7 +269,7 @@ class MumineenController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'eits_id' => 'nullable|integer|digits:8',
-            'hof_its_id' => 'nullable|integer|digits:8',
+            'hof_id' => 'nullable|integer|digits:8',
             'full_name' => 'string|max:255',
             'gender' => 'in:male,female,other',
             'age' => 'nullable|integer',
@@ -412,7 +412,7 @@ class MumineenController extends Controller
         }
         
         // Get the HOF ITS ID - either the member's own HOF ID or if they are the HOF themselves
-        $hofItsId = $mumineen->hof_its_id ?? $mumineen->its_id;
+        $hofItsId = $mumineen->hof_id ?? $mumineen->its_id;
         
         if (!$hofItsId) {
             return response()->json([
@@ -422,7 +422,7 @@ class MumineenController extends Controller
         }
         
         // Find all members who share the same HOF ITS ID
-        $familyMembers = Mumineen::where('hof_its_id', $hofItsId)
+        $familyMembers = Mumineen::where('hof_id', $hofItsId)
             ->orWhere('its_id', $hofItsId) // Include the head of family as well
             ->get();
         
