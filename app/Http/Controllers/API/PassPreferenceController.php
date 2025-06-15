@@ -52,7 +52,7 @@ class PassPreferenceController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function indexOrShow(Request $request)
     {
         if ($request->has('its_id')) {
             $passPreference = PassPreference::where('its_id', $request->input('its_id'))->with('block')->first(); // Eager load block

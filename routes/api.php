@@ -54,11 +54,15 @@ Route::prefix('blocks')->group(function () {
 });
 
 // Pass Preference API Routes
-Route::prefix('pass-preferences')->group(function () {
+Route::prefix('pass-preferences')->middleware('decrypt.its_id')->group(function () {
     Route::get('/', [PassPreferenceController::class, 'indexOrShow']);
     Route::get('/summary', [PassPreferenceController::class, 'summary']);
     Route::post('/', [PassPreferenceController::class, 'store']);
     Route::put('/', [PassPreferenceController::class, 'update']);
+});
+
+// Pass Preference API Routes
+Route::prefix('pass-preferences')->group(function () {
     Route::delete('/', [PassPreferenceController::class, 'destroy']);
 });
 
