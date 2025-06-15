@@ -39,6 +39,10 @@ class PassPreferenceController extends Controller
                         'id' => $block->id,
                         'type' => $block->type,
                         'capacity' => $block->capacity,
+                        'gender' => $block->gender,
+                        'min_age' => $block->min_age,
+                        'max_age' => $block->max_age,
+                        'vaaz_center_name' => $block->vaazCenter->name,
                         'issued_passes' => $block->pass_preferences_count,
                         'availability' => $block->capacity - $block->pass_preferences_count,
                     ];
