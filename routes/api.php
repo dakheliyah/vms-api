@@ -29,6 +29,9 @@ Route::group(['prefix' => 'auth'], function () {
     Route::post('me', [AuthController::class, 'me']);
 });
 
+// Route to get available pass types
+Route::get('/pass-types', [PassPreferenceController::class, 'getPassTypes']);
+
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });

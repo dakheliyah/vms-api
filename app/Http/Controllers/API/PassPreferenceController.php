@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use App\Enums\PassType;
+use Illuminate\Http\JsonResponse;
 
 class PassPreferenceController extends Controller
 {
@@ -291,5 +292,16 @@ class PassPreferenceController extends Controller
         $passPreference->delete();
 
         return response()->json(null, 204);
+    }
+
+    /**
+     * Get all available pass types.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getPassTypes(): JsonResponse
+    {
+        $passTypes = array_map(fn($case) => $case->value, PassType::cases());
+        return response()->json($passTypes);
     }
 }
