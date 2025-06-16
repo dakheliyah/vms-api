@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\Block;
 use App\Models\VaazCenter;
 use App\Models\Event;
+use App\Enums\PassType;
 
 class PassPreference extends Model
 {
@@ -20,8 +21,18 @@ class PassPreference extends Model
     protected $fillable = [
         'its_id',
         'event_id',
+        'pass_type',
         'block_id',
         'vaaz_center_id',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'pass_type' => PassType::class,
     ];
 
     /**

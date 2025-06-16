@@ -9,6 +9,8 @@ use App\Models\Block;
 use App\Models\Event; // Added Event model
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
+use App\Enums\PassType;
 
 class PassPreferenceController extends Controller
 {
@@ -51,7 +53,7 @@ class PassPreferenceController extends Controller
                     $blockAvailability = ($blockCapacity > 0) ? ($blockCapacity - $blockIssuedPasses) : 'unlimited';
                     return [
                         'id' => $block->id,
-                        'name' => $block->name, // Corrected from 'type' to 'name'
+                        'type' => $block->type,
                         'capacity' => $blockCapacity,
                         'gender' => $block->gender,
                         'min_age' => $block->min_age,
@@ -91,6 +93,7 @@ class PassPreferenceController extends Controller
         $validator = Validator::make($request->all(), [
             'its_id' => 'required|integer|unique:pass_preferences,its_id',
             'event_id' => 'required|integer|exists:events,id',
+            'pass_type' => ['nullable', Rule::enum(PassType::class)],
             'block_id' => 'sometimes|nullable|integer|exists:blocks,id',
             'vaaz_center_id' => 'sometimes|nullable|integer|exists:vaaz_centers,id',
         ]);
@@ -176,6 +179,7 @@ class PassPreferenceController extends Controller
         $validator = Validator::make($request->all(), [
             'its_id' => 'required|integer|exists:pass_preferences,its_id',
             'event_id' => 'sometimes|required|integer|exists:events,id', // Required if present
+            'pass_type' => ['sometimes', 'nullable', Rule::enum(PassType::class)],
             'block_id' => 'sometimes|nullable|integer|exists:blocks,id',
             'vaaz_center_id' => 'sometimes|nullable|integer|exists:vaaz_centers,id',
         ]);
