@@ -1,29 +1,320 @@
 {
     "openapi": "3.0.0",
     "info": {
-        "title": "Mumineen API",
-        "description": "API for managing Mumineen records",
+        "title": "Colombo Relay ITS API",
+        "description": "API for managing ITS passes and related information for Colombo Relay.",
+        "contact": {
+            "email": "admin@example.com"
+        },
         "version": "1.0.0"
     },
+    "servers": [
+        {
+            "url": "http://my-default-host.com",
+            "description": "API Server"
+        }
+    ],
     "paths": {
-        "/api/mumineen": {
-            "get": {
+        "/api/auth/login": {
+            "post": {
                 "tags": [
-                    "Mumineen"
+                    "Authentication"
                 ],
-                "summary": "Get all Mumineen records",
-                "description": "Returns all Mumineen records from the database",
-                "operationId": "getMumineenList",
+                "summary": "Log in a user",
+                "description": "Logs in a user with email and password, returns a JWT token.",
+                "operationId": "loginUser",
+                "requestBody": {
+                    "description": "User credentials",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "user@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "password"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login successful, token returned",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "access_token": {
+                                            "description": "JWT access token",
+                                            "type": "string"
+                                        },
+                                        "token_type": {
+                                            "type": "string",
+                                            "example": "bearer"
+                                        },
+                                        "expires_in": {
+                                            "description": "Token expiry in seconds",
+                                            "type": "integer",
+                                            "example": 3600
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid credentials",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "error": "invalid_credentials"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Could not create token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "error": "could_not_create_token"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/me": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Get authenticated user details",
+                "description": "Returns details of the currently authenticated user.",
+                "operationId": "getAuthenticatedUser",
                 "responses": {
                     "200": {
                         "description": "Successful operation",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Mumineen"
-                                    }
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated or Token absent/invalid",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "error": "token_absent_or_invalid"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "error": "user_not_found"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/auth/logout": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Log out a user",
+                "description": "Invalidates the current user's JWT token.",
+                "operationId": "logoutUser",
+                "responses": {
+                    "200": {
+                        "description": "Successfully logged out",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Successfully logged out"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Could not invalidate token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "error": "could_not_invalidate_token"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/auth/refresh": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Refresh a JWT token",
+                "description": "Refreshes an expired JWT token, returns a new token.",
+                "operationId": "refreshToken",
+                "responses": {
+                    "200": {
+                        "description": "Token refreshed successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "access_token": {
+                                            "description": "New JWT access token",
+                                            "type": "string"
+                                        },
+                                        "token_type": {
+                                            "type": "string",
+                                            "example": "bearer"
+                                        },
+                                        "expires_in": {
+                                            "description": "Token expiry in seconds",
+                                            "type": "integer",
+                                            "example": 3600
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Token cannot be refreshed (e.g., blacklisted)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "error": "could_not_refresh_token"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Could not refresh token (general error)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "error": "could_not_refresh_token"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/mumineen": {
+            "get": {
+                "tags": [
+                    "Mumineen"
+                ],
+                "summary": "Get all Mumineen records or a specific one",
+                "description": "Returns all Mumineen records or a specific one if its_id query parameter is provided",
+                "operationId": "getMumineenOrList",
+                "parameters": [
+                    {
+                        "name": "its_id",
+                        "in": "query",
+                        "description": "ITS ID of Mumineen to retrieve (optional)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Mumineen not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Mumineen not found"
+                                        }
+                                    },
+                                    "type": "object"
                                 }
                             }
                         }
@@ -57,7 +348,7 @@
                                         "type": "string",
                                         "example": "EITS123456"
                                     },
-                                    "hof_its_id": {
+                                    "hof_id": {
                                         "type": "string",
                                         "example": "HOF123456"
                                     },
@@ -206,7 +497,7 @@
                                         "type": "string",
                                         "example": "EITS123456"
                                     },
-                                    "hof_its_id": {
+                                    "hof_id": {
                                         "type": "string",
                                         "example": "HOF123456"
                                     },
@@ -358,10 +649,550 @@
                     }
                 }
             }
+        },
+        "/api/pass-preferences/summary": {
+            "get": {
+                "tags": [
+                    "Pass Preferences"
+                ],
+                "summary": "Get pass availability summary for an event",
+                "description": "Returns a summary of pass availability, including Vaaz centers and their blocks, for a specific event.",
+                "operationId": "getPassPreferenceSummary",
+                "parameters": [
+                    {
+                        "name": "event_id",
+                        "in": "query",
+                        "description": "ID of the event to get summary for",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "description": "Vaaz Center ID",
+                                                "type": "integer"
+                                            },
+                                            "name": {
+                                                "description": "Vaaz Center Name",
+                                                "type": "string"
+                                            },
+                                            "vaaz_center_capacity": {
+                                                "description": "Capacity of the Vaaz Center",
+                                                "type": "integer"
+                                            },
+                                            "vaaz_center_issued_passes": {
+                                                "description": "Number of passes issued for the Vaaz Center",
+                                                "type": "integer"
+                                            },
+                                            "vaaz_center_availability": {
+                                                "description": "Availability in Vaaz Center (number or 'unlimited')"
+                                            },
+                                            "blocks": {
+                                                "type": "array",
+                                                "items": {
+                                                    "properties": {
+                                                        "id": {
+                                                            "description": "Block ID",
+                                                            "type": "integer"
+                                                        },
+                                                        "type": {
+                                                            "description": "Block Type/Name",
+                                                            "type": "string"
+                                                        },
+                                                        "capacity": {
+                                                            "description": "Capacity of the Block",
+                                                            "type": "integer"
+                                                        },
+                                                        "gender": {
+                                                            "description": "Gender for the Block",
+                                                            "type": "string",
+                                                            "enum": [
+                                                                "Male",
+                                                                "Female",
+                                                                "All"
+                                                            ]
+                                                        },
+                                                        "min_age": {
+                                                            "description": "Minimum age for the Block",
+                                                            "type": "integer",
+                                                            "nullable": true
+                                                        },
+                                                        "max_age": {
+                                                            "description": "Maximum age for the Block",
+                                                            "type": "integer",
+                                                            "nullable": true
+                                                        },
+                                                        "block_issued_passes": {
+                                                            "description": "Number of passes issued for the Block",
+                                                            "type": "integer"
+                                                        },
+                                                        "block_availability": {
+                                                            "description": "Availability in Block (number or 'unlimited')"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "event_id": [
+                                        "The event id field is required."
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/pass-preferences": {
+            "get": {
+                "tags": [
+                    "Pass Preferences"
+                ],
+                "summary": "List all pass preferences or get a specific one by ITS ID",
+                "description": "Returns a list of all pass preferences or a single pass preference if an ITS ID is provided. The ITS ID is expected to be encrypted and will be decrypted by middleware.",
+                "operationId": "getPassPreferences",
+                "parameters": [
+                    {
+                        "name": "its_id",
+                        "in": "query",
+                        "description": "Encrypted ITS ID of the mumineen to retrieve a specific pass preference. If not provided, lists all preferences.",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "description": "Can be a single PassPreference object or an array of PassPreference objects.",
+                                    "type": "object"
+                                },
+                                "example": [
+                                    {
+                                        "id": 1,
+                                        "its_id": 12345,
+                                        "event_id": 1,
+                                        "pass_type": "RAHAT",
+                                        "block_id": 1,
+                                        "vaaz_center_id": 1,
+                                        "created_at": "2023-01-01T00:00:00.000000Z",
+                                        "updated_at": "2023-01-01T00:00:00.000000Z",
+                                        "block": {
+                                            "id": 1,
+                                            "name": "Block A"
+                                        },
+                                        "vaazCenter": {
+                                            "id": 1,
+                                            "name": "Center 1"
+                                        },
+                                        "event": {
+                                            "id": 1,
+                                            "name": "Event Name"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Pass Preference not found for the given ITS ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Pass Preference not found for this ITS number"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Pass Preferences"
+                ],
+                "summary": "Update an existing pass preference",
+                "description": "Updates an existing pass preference record identified by its ITS ID. The ITS ID in the body is expected to be encrypted.",
+                "operationId": "updatePassPreference",
+                "requestBody": {
+                    "description": "Pass preference data to update. its_id is required to identify the record.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "its_id"
+                                ],
+                                "properties": {
+                                    "its_id": {
+                                        "description": "Encrypted ITS ID of the mumineen whose preference is to be updated.",
+                                        "type": "string"
+                                    },
+                                    "event_id": {
+                                        "description": "ID of the event",
+                                        "type": "integer",
+                                        "nullable": true
+                                    },
+                                    "pass_type": {
+                                        "description": "Type of pass",
+                                        "type": "string",
+                                        "enum": [
+                                            "RAHAT",
+                                            "CHAIR",
+                                            "GENERAL",
+                                            "MUM_WITH_KIDS"
+                                        ],
+                                        "nullable": true
+                                    },
+                                    "block_id": {
+                                        "description": "ID of the block",
+                                        "type": "integer",
+                                        "nullable": true
+                                    },
+                                    "vaaz_center_id": {
+                                        "description": "ID of the Vaaz center",
+                                        "type": "integer",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Pass preference updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "id": 1,
+                                    "its_id": 12345,
+                                    "event_id": 1,
+                                    "pass_type": "RAHAT",
+                                    "block_id": 1,
+                                    "vaaz_center_id": 1,
+                                    "created_at": "2023-01-01T00:00:00.000000Z",
+                                    "updated_at": "2023-01-01T00:00:00.000000Z"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Pass Preference not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Pass Preference not found for the given ITS number."
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error or business logic error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "event_id": [
+                                        "The selected event id is invalid."
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Pass Preferences"
+                ],
+                "summary": "Create a new pass preference",
+                "description": "Creates a new pass preference record. The ITS ID is expected to be encrypted.",
+                "operationId": "storePassPreference",
+                "requestBody": {
+                    "description": "Pass preference data",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "its_id",
+                                    "event_id"
+                                ],
+                                "properties": {
+                                    "its_id": {
+                                        "description": "Encrypted ITS ID of the mumineen. Unique for pass_preferences.",
+                                        "type": "string"
+                                    },
+                                    "event_id": {
+                                        "description": "ID of the event",
+                                        "type": "integer"
+                                    },
+                                    "pass_type": {
+                                        "description": "Type of pass",
+                                        "type": "string",
+                                        "enum": [
+                                            "RAHAT",
+                                            "CHAIR",
+                                            "GENERAL",
+                                            "MUM_WITH_KIDS"
+                                        ],
+                                        "nullable": true
+                                    },
+                                    "block_id": {
+                                        "description": "ID of the block (must belong to a Vaaz Center associated with the event, and to the specified Vaaz Center if vaaz_center_id is also provided)",
+                                        "type": "integer",
+                                        "nullable": true
+                                    },
+                                    "vaaz_center_id": {
+                                        "description": "ID of the Vaaz center (must belong to the specified event)",
+                                        "type": "integer",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Pass preference created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "id": 1,
+                                    "its_id": 12345,
+                                    "event_id": 1,
+                                    "pass_type": "RAHAT",
+                                    "block_id": 1,
+                                    "vaaz_center_id": 1,
+                                    "created_at": "2023-01-01T00:00:00.000000Z",
+                                    "updated_at": "2023-01-01T00:00:00.000000Z"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error or business logic error (e.g., capacity full, incorrect associations)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "its_id": [
+                                        "The its id has already been taken."
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Pass Preferences"
+                ],
+                "summary": "Delete a pass preference",
+                "description": "Deletes a pass preference record identified by its ITS ID. The ITS ID in the body is expected to be encrypted.",
+                "operationId": "deletePassPreference",
+                "requestBody": {
+                    "description": "ITS ID of the pass preference to delete.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "its_id"
+                                ],
+                                "properties": {
+                                    "its_id": {
+                                        "description": "Encrypted ITS ID of the mumineen whose preference is to be deleted.",
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": "Pass preference deleted successfully"
+                    },
+                    "404": {
+                        "description": "Pass Preference not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Pass Preference not found for the given ITS number."
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "its_id": [
+                                        "The its id field is required."
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/pass-types": {
+            "get": {
+                "tags": [
+                    "Pass Preferences"
+                ],
+                "summary": "Get all available pass types",
+                "description": "Returns a list of all available pass types defined in the PassType enum.",
+                "operationId": "getAvailablePassTypes",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                "example": [
+                                    "RAHAT",
+                                    "CHAIR",
+                                    "GENERAL",
+                                    "MUM_WITH_KIDS"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {
         "schemas": {
+            "User": {
+                "title": "User",
+                "description": "User model",
+                "properties": {
+                    "id": {
+                        "description": "User ID",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "name": {
+                        "description": "User's name",
+                        "type": "string"
+                    },
+                    "email": {
+                        "description": "User's email address",
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "email_verified_at": {
+                        "description": "Timestamp of email verification",
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "description": "Creation timestamp",
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "updated_at": {
+                        "description": "Last update timestamp",
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
             "Mumineen": {
                 "title": "Mumineen",
                 "description": "Mumineen model",
@@ -424,9 +1255,25 @@
                 },
                 "type": "object"
             }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "description": "Enter token in format (Bearer <token>)",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
+            }
         }
     },
     "tags": [
+        {
+            "name": "Authentication",
+            "description": "API Endpoints for User Authentication"
+        },
+        {
+            "name": "Pass Preferences",
+            "description": "API Endpoints for managing Pass Preferences"
+        },
         {
             "name": "Mumineen",
             "description": "Mumineen"

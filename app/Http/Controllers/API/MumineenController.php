@@ -8,13 +8,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 
-/**
- * @OA\Info(
- *     title="Mumineen API",
- *     version="1.0.0",
- *     description="API for managing Mumineen records"
- * )
- */
 class MumineenController extends Controller
 {
     /**

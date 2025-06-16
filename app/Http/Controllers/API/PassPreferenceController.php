@@ -12,10 +12,63 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use App\Enums\PassType;
 use Illuminate\Http\JsonResponse;
+use OpenApi\Annotations as OA;
 
+/**
+ * @OA\Tag(
+ *     name="Pass Preferences",
+ *     description="API Endpoints for managing Pass Preferences"
+ * )
+ */
 class PassPreferenceController extends Controller
 {
     /**
+     * @OA\Get(
+     *      path="/api/pass-preferences/summary",
+     *      operationId="getPassPreferenceSummary",
+     *      tags={"Pass Preferences"},
+     *      summary="Get pass availability summary for an event",
+     *      description="Returns a summary of pass availability, including Vaaz centers and their blocks, for a specific event.",
+     *      security={{"bearerAuth":{}}},
+     *      @OA\Parameter(
+     *          name="event_id",
+     *          in="query",
+     *          description="ID of the event to get summary for",
+     *          required=true,
+     *          @OA\Schema(type="integer")
+     *      ),
+     *      @OA\Response(
+     *          response=200,
+     *          description="Successful operation",
+     *          @OA\JsonContent(
+     *              type="array",
+     *              @OA\Items(
+     *                  type="object",
+     *                  @OA\Property(property="id", type="integer", description="Vaaz Center ID"),
+     *                  @OA\Property(property="name", type="string", description="Vaaz Center Name"),
+     *                  @OA\Property(property="vaaz_center_capacity", type="integer", description="Capacity of the Vaaz Center"),
+     *                  @OA\Property(property="vaaz_center_issued_passes", type="integer", description="Number of passes issued for the Vaaz Center"),
+     *                  @OA\Property(property="vaaz_center_availability", description="Availability in Vaaz Center (number or 'unlimited')"),
+     *                  @OA\Property(property="blocks", type="array", @OA\Items(
+     *                      type="object",
+     *                      @OA\Property(property="id", type="integer", description="Block ID"),
+     *                      @OA\Property(property="type", type="string", description="Block Type/Name"),
+     *                      @OA\Property(property="capacity", type="integer", description="Capacity of the Block"),
+     *                      @OA\Property(property="gender", type="string", enum={"Male", "Female", "All"}, description="Gender for the Block"),
+     *                      @OA\Property(property="min_age", type="integer", nullable=true, description="Minimum age for the Block"),
+     *                      @OA\Property(property="max_age", type="integer", nullable=true, description="Maximum age for the Block"),
+     *                      @OA\Property(property="block_issued_passes", type="integer", description="Number of passes issued for the Block"),
+     *                      @OA\Property(property="block_availability", description="Availability in Block (number or 'unlimited')")
+     *                  ))
+     *              )
+     *          )
+     *      ),
+     *      @OA\Response(
+     *          response=422,
+     *          description="Validation error",
+     *          @OA\JsonContent(type="object", example={"event_id": {"The event id field is required."}})
+     *      )
+     * )
      * Provide a summary of pass availability for a given event.
      */
     public function summary(Request $request)
@@ -70,6 +123,35 @@ class PassPreferenceController extends Controller
     }
 
     /**
+     * @OA\Get(
+     *      path="/api/pass-preferences",
+     *      operationId="getPassPreferences",
+     *      tags={"Pass Preferences"},
+     *      summary="List all pass preferences or get a specific one by ITS ID",
+     *      description="Returns a list of all pass preferences or a single pass preference if an ITS ID is provided. The ITS ID is expected to be encrypted and will be decrypted by middleware.",
+     *      security={{"bearerAuth":{}}},
+     *      @OA\Parameter(
+     *          name="its_id",
+     *          in="query",
+     *          description="Encrypted ITS ID of the mumineen to retrieve a specific pass preference. If not provided, lists all preferences.",
+     *          required=false,
+     *          @OA\Schema(type="string")
+     *      ),
+     *      @OA\Response(
+     *          response=200,
+     *          description="Successful operation",
+     *          @OA\JsonContent(
+     *              type="object",
+     *              description="Can be a single PassPreference object or an array of PassPreference objects.",
+     *              example={{"id": 1, "its_id": 12345, "event_id": 1, "pass_type": "RAHAT", "block_id": 1, "vaaz_center_id": 1, "created_at": "2023-01-01T00:00:00.000000Z", "updated_at": "2023-01-01T00:00:00.000000Z", "block": {"id": 1, "name": "Block A"}, "vaazCenter": {"id": 1, "name": "Center 1"}, "event": {"id": 1, "name": "Event Name"}}} 
+     *          )
+     *      ),
+     *      @OA\Response(
+     *          response=404,
+     *          description="Pass Preference not found for the given ITS ID",
+     *          @OA\JsonContent(type="object", example={"message": "Pass Preference not found for this ITS number"})
+     *      )
+     * )
      * Display a listing of the resource.
      */
     public function indexOrShow(Request $request)
@@ -87,6 +169,36 @@ class PassPreferenceController extends Controller
     }
 
     /**
+     * @OA\Post(
+     *      path="/api/pass-preferences",
+     *      operationId="storePassPreference",
+     *      tags={"Pass Preferences"},
+     *      summary="Create a new pass preference",
+     *      description="Creates a new pass preference record. The ITS ID is expected to be encrypted.",
+     *      security={{"bearerAuth":{}}},
+     *      @OA\RequestBody(
+     *          required=true,
+     *          description="Pass preference data",
+     *          @OA\JsonContent(
+     *              required={"its_id", "event_id"},
+     *              @OA\Property(property="its_id", type="string", description="Encrypted ITS ID of the mumineen. Unique for pass_preferences."),
+     *              @OA\Property(property="event_id", type="integer", description="ID of the event"),
+     *              @OA\Property(property="pass_type", type="string", enum={"RAHAT", "CHAIR", "GENERAL", "MUM_WITH_KIDS"}, nullable=true, description="Type of pass"),
+     *              @OA\Property(property="block_id", type="integer", nullable=true, description="ID of the block (must belong to a Vaaz Center associated with the event, and to the specified Vaaz Center if vaaz_center_id is also provided)"),
+     *              @OA\Property(property="vaaz_center_id", type="integer", nullable=true, description="ID of the Vaaz center (must belong to the specified event)")
+     *          )
+     *      ),
+     *      @OA\Response(
+     *          response=201,
+     *          description="Pass preference created successfully",
+     *          @OA\JsonContent(type="object", example={"id": 1, "its_id": 12345, "event_id": 1, "pass_type": "RAHAT", "block_id": 1, "vaaz_center_id": 1, "created_at": "2023-01-01T00:00:00.000000Z", "updated_at": "2023-01-01T00:00:00.000000Z"})
+     *      ),
+     *      @OA\Response(
+     *          response=422,
+     *          description="Validation error or business logic error (e.g., capacity full, incorrect associations)",
+     *          @OA\JsonContent(type="object", example={"its_id": {"The its id has already been taken."}})
+     *      )
+     * )
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
@@ -173,6 +285,41 @@ class PassPreferenceController extends Controller
     }
 
     /**
+     * @OA\Put(
+     *      path="/api/pass-preferences",
+     *      operationId="updatePassPreference",
+     *      tags={"Pass Preferences"},
+     *      summary="Update an existing pass preference",
+     *      description="Updates an existing pass preference record identified by its ITS ID. The ITS ID in the body is expected to be encrypted.",
+     *      security={{"bearerAuth":{}}},
+     *      @OA\RequestBody(
+     *          required=true,
+     *          description="Pass preference data to update. its_id is required to identify the record.",
+     *          @OA\JsonContent(
+     *              required={"its_id"},
+     *              @OA\Property(property="its_id", type="string", description="Encrypted ITS ID of the mumineen whose preference is to be updated."),
+     *              @OA\Property(property="event_id", type="integer", nullable=true, description="ID of the event"),
+     *              @OA\Property(property="pass_type", type="string", enum={"RAHAT", "CHAIR", "GENERAL", "MUM_WITH_KIDS"}, nullable=true, description="Type of pass"),
+     *              @OA\Property(property="block_id", type="integer", nullable=true, description="ID of the block"),
+     *              @OA\Property(property="vaaz_center_id", type="integer", nullable=true, description="ID of the Vaaz center")
+     *          )
+     *      ),
+     *      @OA\Response(
+     *          response=200,
+     *          description="Pass preference updated successfully",
+     *          @OA\JsonContent(type="object", example={"id": 1, "its_id": 12345, "event_id": 1, "pass_type": "RAHAT", "block_id": 1, "vaaz_center_id": 1, "created_at": "2023-01-01T00:00:00.000000Z", "updated_at": "2023-01-01T00:00:00.000000Z"})
+     *      ),
+     *      @OA\Response(
+     *          response=404,
+     *          description="Pass Preference not found",
+     *          @OA\JsonContent(type="object", example={"message": "Pass Preference not found for the given ITS number."})
+     *      ),
+     *      @OA\Response(
+     *          response=422,
+     *          description="Validation error or business logic error",
+     *          @OA\JsonContent(type="object", example={"event_id": {"The selected event id is invalid."}})
+     *      )
+     * )
      * Update the specified resource in storage.
      */
     public function update(Request $request)
@@ -270,6 +417,36 @@ class PassPreferenceController extends Controller
     }
 
     /**
+     * @OA\Delete(
+     *      path="/api/pass-preferences",
+     *      operationId="deletePassPreference",
+     *      tags={"Pass Preferences"},
+     *      summary="Delete a pass preference",
+     *      description="Deletes a pass preference record identified by its ITS ID. The ITS ID in the body is expected to be encrypted.",
+     *      security={{"bearerAuth":{}}},
+     *      @OA\RequestBody(
+     *          required=true,
+     *          description="ITS ID of the pass preference to delete.",
+     *          @OA\JsonContent(
+     *              required={"its_id"},
+     *              @OA\Property(property="its_id", type="string", description="Encrypted ITS ID of the mumineen whose preference is to be deleted.")
+     *          )
+     *      ),
+     *      @OA\Response(
+     *          response=204,
+     *          description="Pass preference deleted successfully"
+     *      ),
+     *      @OA\Response(
+     *          response=404,
+     *          description="Pass Preference not found",
+     *          @OA\JsonContent(type="object", example={"message": "Pass Preference not found for the given ITS number."})
+     *      ),
+     *      @OA\Response(
+     *          response=422,
+     *          description="Validation error",
+     *          @OA\JsonContent(type="object", example={"its_id": {"The its id field is required."}})
+     *      )
+     * )
      * Remove the specified resource from storage.
      */
     public function destroy(Request $request)
@@ -295,6 +472,22 @@ class PassPreferenceController extends Controller
     }
 
     /**
+     * @OA\Get(
+     *      path="/api/pass-types",
+     *      operationId="getAvailablePassTypes",
+     *      tags={"Pass Preferences"},
+     *      summary="Get all available pass types",
+     *      description="Returns a list of all available pass types defined in the PassType enum.",
+     *      @OA\Response(
+     *          response=200,
+     *          description="Successful operation",
+     *          @OA\JsonContent(
+     *              type="array",
+     *              @OA\Items(type="string"),
+     *              example={"RAHAT", "CHAIR", "GENERAL", "MUM_WITH_KIDS"}
+     *          )
+     *      )
+     * )
      * Get all available pass types.
      *
      * @return \Illuminate\Http\JsonResponse
