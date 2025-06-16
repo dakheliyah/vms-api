@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Event;
 use App\Models\Block;
+use App\Models\PassPreference;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -39,5 +40,13 @@ class VaazCenter extends Model
     public function blocks()
     {
         return $this->hasMany(Block::class);
+    }
+
+    /**
+     * Get the pass preferences associated with the vaaz center.
+     */
+    public function passPreferences()
+    {
+        return $this->hasMany(PassPreference::class);
     }
 }

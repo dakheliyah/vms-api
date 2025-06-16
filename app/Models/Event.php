@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\PassPreference;
+use App\Models\Miqaat;
 
 class Event extends Model
 {
@@ -23,7 +25,24 @@ class Event extends Model
      * @var array<int, string>
      */
     protected $fillable = [
+        'miqaat_id',
         'name',
         'status',
     ];
+
+    /**
+     * Get the pass preferences for the event.
+     */
+    public function passPreferences()
+    {
+        return $this->hasMany(PassPreference::class);
+    }
+
+    /**
+     * Get the miqaat that the event belongs to.
+     */
+    public function miqaat()
+    {
+        return $this->belongsTo(Miqaat::class);
+    }
 }

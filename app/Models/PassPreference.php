@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Block;
 use App\Models\VaazCenter;
+use App\Models\Event;
 
 class PassPreference extends Model
 {
@@ -18,6 +19,7 @@ class PassPreference extends Model
      */
     protected $fillable = [
         'its_id',
+        'event_id',
         'block_id',
         'vaaz_center_id',
     ];
@@ -36,5 +38,13 @@ class PassPreference extends Model
     public function vaazCenter()
     {
         return $this->belongsTo(VaazCenter::class, 'vaaz_center_id');
+    }
+
+    /**
+     * Get the event that the pass preference belongs to.
+     */
+    public function event()
+    {
+        return $this->belongsTo(Event::class, 'event_id');
     }
 }

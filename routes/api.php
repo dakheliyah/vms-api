@@ -7,6 +7,7 @@ use App\Http\Controllers\API\VaazCenterController;
 use App\Http\Controllers\API\BlockController;
 use App\Http\Controllers\API\PassPreferenceController;
 use App\Http\Controllers\API\EventController;
+use App\Http\Controllers\API\MiqaatController;
 use App\Http\Controllers\API\AuthController;
 
 /*
@@ -46,45 +47,36 @@ Route::prefix('mumineen')->group(function () {
     Route::delete('/{its_id}', [MumineenController::class, 'destroy']);
 });
 
-// Vaaz Center API Routes (Protected)
+// Protected API Routes
 Route::group(['middleware' => 'auth:api'], function () {
+    // Miqaat API Routes
+    Route::apiResource('miqaats', MiqaatController::class);
+
+    // Event API Routes
+    Route::apiResource('events', EventController::class);
+
+    // Vaaz Center API Routes
     Route::prefix('vaaz-centers')->group(function () {
-    Route::get('/', [VaazCenterController::class, 'indexOrShow']);
-    Route::post('/', [VaazCenterController::class, 'store']);
-    Route::put('/', [VaazCenterController::class, 'update']);
-    Route::delete('/', [VaazCenterController::class, 'destroy']);
+        Route::get('/', [VaazCenterController::class, 'indexOrShow']);
+        Route::post('/', [VaazCenterController::class, 'store']);
+        Route::put('/', [VaazCenterController::class, 'update']);
+        Route::delete('/', [VaazCenterController::class, 'destroy']);
     });
-});
 
-// Block API Routes (Protected)
-Route::group(['middleware' => 'auth:api'], function () {
+    // Block API Routes
     Route::prefix('blocks')->group(function () {
-    Route::get('/', [BlockController::class, 'index']);
-    Route::post('/', [BlockController::class, 'store']);
-    Route::put('/', [BlockController::class, 'update']);
-    Route::delete('/', [BlockController::class, 'destroy']);
+        Route::get('/', [BlockController::class, 'index']);
+        Route::post('/', [BlockController::class, 'store']);
+        Route::put('/', [BlockController::class, 'update']);
+        Route::delete('/', [BlockController::class, 'destroy']);
     });
-});
 
-// Pass Preference API Routes
-Route::prefix('pass-preferences')->middleware('decrypt.its_id')->group(function () {
-    Route::get('/', [PassPreferenceController::class, 'indexOrShow']);
-    Route::get('/summary', [PassPreferenceController::class, 'summary']);
-    Route::post('/', [PassPreferenceController::class, 'store']);
-    Route::put('/', [PassPreferenceController::class, 'update']);
-});
-
-// Pass Preference API Routes (Destroy method protected)
-Route::prefix('pass-preferences')->group(function () {
-    Route::delete('/', [PassPreferenceController::class, 'destroy'])->middleware('auth:api');
-});
-
-// Event API Routes (Protected)
-Route::group(['middleware' => 'auth:api'], function () {
-    Route::prefix('events')->group(function () {
-    Route::get('/', [EventController::class, 'index']);
-    Route::post('/', [EventController::class, 'store']);
-    Route::put('/', [EventController::class, 'update']);
-    Route::delete('/', [EventController::class, 'destroy']);
+    // Pass Preference API Routes
+    Route::prefix('pass-preferences')->middleware('decrypt.its_id')->group(function () {
+        Route::get('/', [PassPreferenceController::class, 'indexOrShow']);
+        Route::post('/', [PassPreferenceController::class, 'store']);
+        Route::put('/', [PassPreferenceController::class, 'update']);
+        Route::delete('/', [PassPreferenceController::class, 'destroy']);
+        Route::get('/summary', [PassPreferenceController::class, 'summary']);
     });
 });
