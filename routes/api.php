@@ -47,6 +47,15 @@ Route::prefix('mumineen')->group(function () {
     Route::delete('/{its_id}', [MumineenController::class, 'destroy']);
 });
 
+// Pass Preference API Routes
+Route::prefix('pass-preferences')->middleware('decrypt.its_id')->group(function () {
+    Route::get('/', [PassPreferenceController::class, 'indexOrShow']);
+    Route::post('/', [PassPreferenceController::class, 'store']);
+    Route::put('/', [PassPreferenceController::class, 'update']);
+    Route::delete('/', [PassPreferenceController::class, 'destroy']);
+    Route::get('/summary', [PassPreferenceController::class, 'summary']);
+});
+
 // Protected API Routes
 Route::group(['middleware' => 'auth:api'], function () {
     // Miqaat API Routes
@@ -71,12 +80,4 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::delete('/', [BlockController::class, 'destroy']);
     });
 
-    // Pass Preference API Routes
-    Route::prefix('pass-preferences')->middleware('decrypt.its_id')->group(function () {
-        Route::get('/', [PassPreferenceController::class, 'indexOrShow']);
-        Route::post('/', [PassPreferenceController::class, 'store']);
-        Route::put('/', [PassPreferenceController::class, 'update']);
-        Route::delete('/', [PassPreferenceController::class, 'destroy']);
-        Route::get('/summary', [PassPreferenceController::class, 'summary']);
-    });
 });
