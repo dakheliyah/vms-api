@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('pass_preferences', function (Blueprint $table) {
-            $table->foreignId('event_id')->constrained('events')->onDelete('cascade')->after('its_id'); // Added after its_id for logical grouping
+            $table->foreignId('event_id')->nullable()->constrained('events')->onDelete('cascade')->after('its_id'); // Added after its_id for logical grouping
         });
     }
 
