@@ -7,12 +7,14 @@ use App\Models\PassPreference;
 use App\Models\VaazCenter;
 use App\Models\Block;
 use App\Models\Event; // Added Event model
+use App\Models\Mumineen;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use App\Enums\PassType;
 use Illuminate\Http\JsonResponse;
 use OpenApi\Annotations as OA;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @OA\Tag(
@@ -62,6 +64,11 @@ class PassPreferenceController extends Controller
      *                  ))
      *              )
      *          )
+     *      ),
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthenticated",
+     *          @OA\JsonContent(type="object", example={"message": "Unauthenticated."})
      *      ),
      *      @OA\Response(
      *          response=422,
@@ -127,24 +134,33 @@ class PassPreferenceController extends Controller
      *      path="/api/pass-preferences",
      *      operationId="getPassPreferences",
      *      tags={"Pass Preferences"},
-     *      summary="List all pass preferences or get a specific one by ITS ID",
-     *      description="Returns a list of all pass preferences or a single pass preference if an ITS ID is provided. The ITS ID is expected to be encrypted and will be decrypted by middleware.",
+     *      summary="Get a specific pass preference by ITS ID",
+     *      description="Returns a single pass preference if an ITS ID is provided. The user must be authorized to view the preference for the given ITS ID. Listing all preferences is restricted and will return an empty array.",
      *      security={{"bearerAuth":{}}},
      *      @OA\Parameter(
      *          name="its_id",
      *          in="query",
-     *          description="Encrypted ITS ID of the mumineen to retrieve a specific pass preference. If not provided, lists all preferences.",
+     *          description="Encrypted ITS ID of the mumineen to retrieve a specific pass preference. If not provided, returns an empty array.",
      *          required=false,
      *          @OA\Schema(type="string")
      *      ),
      *      @OA\Response(
      *          response=200,
-     *          description="Successful operation",
+     *          description="Successful operation. Returns a single PassPreference object or an empty array.",
      *          @OA\JsonContent(
      *              type="object",
-     *              description="Can be a single PassPreference object or an array of PassPreference objects.",
-     *              example={{"id": 1, "its_id": 12345, "event_id": 1, "pass_type": "RAHAT", "block_id": 1, "vaaz_center_id": 1, "created_at": "2023-01-01T00:00:00.000000Z", "updated_at": "2023-01-01T00:00:00.000000Z", "block": {"id": 1, "name": "Block A"}, "vaazCenter": {"id": 1, "name": "Center 1"}, "event": {"id": 1, "name": "Event Name"}}} 
+     *              example={"id": 1, "its_id": 12345, "event_id": 1, "pass_type": "RAHAT", "block_id": 1, "vaaz_center_id": 1, "created_at": "2023-01-01T00:00:00.000000Z", "updated_at": "2023-01-01T00:00:00.000000Z", "block": {"id": 1, "name": "Block A"}, "vaazCenter": {"id": 1, "name": "Center 1"}, "event": {"id": 1, "name": "Event Name"}}
      *          )
+     *      ),
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthenticated",
+     *          @OA\JsonContent(type="object", example={"message": "Unauthenticated."})
+     *      ),
+     *      @OA\Response(
+     *          response=403,
+     *          description="Forbidden. User is not authorized to view this preference.",
+     *          @OA\JsonContent(type="object", example={"message": "You are not authorized to view this pass preference."})
      *      ),
      *      @OA\Response(
      *          response=404,
@@ -157,15 +173,24 @@ class PassPreferenceController extends Controller
     public function indexOrShow(Request $request)
     {
         if ($request->has('its_id')) {
-            $passPreference = PassPreference::where('its_id', $request->input('its_id'))->with(['block', 'vaazCenter', 'event'])->first(); 
+            $targetItsId = $request->input('its_id');
+
+            // Authorization Check: Ensure the requested ITS ID is in the user's family.
+            if (!$this->isFamilyMember($targetItsId)) {
+                return response()->json(['message' => 'You are not authorized to view this pass preference.'], 403);
+            }
+
+            $passPreference = PassPreference::where('its_id', $targetItsId)->with(['block', 'vaazCenter', 'event'])->first();
             if (!$passPreference) {
                 return response()->json(['message' => 'Pass Preference not found for this ITS number'], 404);
             }
             return response()->json($passPreference);
         }
 
-        // Consider pagination for `all()` if the list can grow large
-        return PassPreference::with(['block', 'vaazCenter', 'event'])->get(); 
+        // Listing all preferences is a potential data leak and should be restricted.
+        // Returning an empty array for non-specific requests.
+        // Implement role-based access control to allow admins to see all.
+        return response()->json([]);
     }
 
     /**
@@ -173,115 +198,130 @@ class PassPreferenceController extends Controller
      *      path="/api/pass-preferences",
      *      operationId="storePassPreference",
      *      tags={"Pass Preferences"},
-     *      summary="Create a new pass preference",
-     *      description="Creates a new pass preference record. The ITS ID is expected to be encrypted.",
+     *      summary="Create one or more new pass preferences",
+     *      description="Creates one or more new pass preference records in a single transaction. The ITS ID is expected to be encrypted.",
      *      security={{"bearerAuth":{}}},
      *      @OA\RequestBody(
      *          required=true,
-     *          description="Pass preference data",
+     *          description="An array of pass preference objects to create.",
      *          @OA\JsonContent(
-     *              required={"its_id", "event_id"},
-     *              @OA\Property(property="its_id", type="string", description="Encrypted ITS ID of the mumineen. Unique for pass_preferences."),
-     *              @OA\Property(property="event_id", type="integer", description="ID of the event"),
-     *              @OA\Property(property="pass_type", type="string", enum={"RAHAT", "CHAIR", "GENERAL", "MUM_WITH_KIDS"}, nullable=true, description="Type of pass"),
-     *              @OA\Property(property="block_id", type="integer", nullable=true, description="ID of the block (must belong to a Vaaz Center associated with the event, and to the specified Vaaz Center if vaaz_center_id is also provided)"),
-     *              @OA\Property(property="vaaz_center_id", type="integer", nullable=true, description="ID of the Vaaz center (must belong to the specified event)")
+     *              type="array",
+     *              @OA\Items(
+     *                  required={"its_id", "event_id"},
+     *                  @OA\Property(property="its_id", type="string", description="Encrypted ITS ID of the mumineen. Must be unique."),
+     *                  @OA\Property(property="event_id", type="integer", description="ID of the event"),
+     *                  @OA\Property(property="pass_type", type="string", enum={"RAHAT", "CHAIR", "GENERAL", "MUM_WITH_KIDS"}, nullable=true, description="Type of pass"),
+     *                  @OA\Property(property="block_id", type="integer", nullable=true, description="ID of the block"),
+     *                  @OA\Property(property="vaaz_center_id", type="integer", nullable=true, description="ID of the Vaaz center")
+     *              )
      *          )
      *      ),
      *      @OA\Response(
      *          response=201,
-     *          description="Pass preference created successfully",
-     *          @OA\JsonContent(type="object", example={"id": 1, "its_id": 12345, "event_id": 1, "pass_type": "RAHAT", "block_id": 1, "vaaz_center_id": 1, "created_at": "2023-01-01T00:00:00.000000Z", "updated_at": "2023-01-01T00:00:00.000000Z"})
+     *          description="Pass preferences created successfully",
+     *          @OA\JsonContent(
+     *              type="array",
+     *              @OA\Items(type="object", example={"id": 1, "its_id": 12345, "event_id": 1, "pass_type": "RAHAT", "block_id": 1, "vaaz_center_id": 1, "created_at": "2023-01-01T00:00:00.000000Z", "updated_at": "2023-01-01T00:00:00.000000Z"})
+     *          )
+     *      ),
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthenticated",
+     *          @OA\JsonContent(type="object", example={"message": "Unauthenticated."})
+     *      ),
+     *      @OA\Response(
+     *          response=403,
+     *          description="Forbidden. User is not authorized to create a preference for one or more ITS numbers.",
+     *          @OA\JsonContent(type="object", example={"message": "Authorization failed for one or more ITS numbers."})
      *      ),
      *      @OA\Response(
      *          response=422,
      *          description="Validation error or business logic error (e.g., capacity full, incorrect associations)",
-     *          @OA\JsonContent(type="object", example={"its_id": {"The its id has already been taken."}})
+     *          @OA\JsonContent(type="object", example={"message": "The selected block is full for ITS 12345"})
      *      )
      * )
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'its_id' => 'required|integer|unique:pass_preferences,its_id',
-            'event_id' => 'required|integer|exists:events,id',
-            'pass_type' => ['nullable', Rule::enum(PassType::class)],
-            'block_id' => 'sometimes|nullable|integer|exists:blocks,id',
-            'vaaz_center_id' => 'sometimes|nullable|integer|exists:vaaz_centers,id',
+        $preferencesData = $request->all();
+
+        if (!is_array($preferencesData) || empty($preferencesData) || !isset($preferencesData[0])) {
+            return response()->json(['message' => 'Request body must be a non-empty array of pass preferences.'], 400);
+        }
+
+        $validator = Validator::make($preferencesData, [
+            '*.its_id' => 'required|integer|distinct|unique:pass_preferences,its_id',
+            '*.event_id' => 'required|integer|exists:events,id',
+            '*.pass_type' => ['nullable', Rule::enum(PassType::class)],
+            '*.block_id' => 'sometimes|nullable|integer|exists:blocks,id',
+            '*.vaaz_center_id' => 'sometimes|nullable|integer|exists:vaaz_centers,id',
         ]);
 
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);
         }
 
-        $validatedData = $validator->validated();
+        $validatedPreferences = $validator->validated();
+        $createdPreferences = [];
 
-        // The event_id from validatedData is guaranteed to exist by the 'exists:events,id' validation rule.
-        $targetEventIdForComparison = $validatedData['event_id']; 
-
-        // Cross-reference Vaaz Center with the target Event ID
-        if (array_key_exists('vaaz_center_id', $validatedData) && $validatedData['vaaz_center_id'] !== null) {
-            $vaazCenter = VaazCenter::find($validatedData['vaaz_center_id']);
-            // $vaazCenter will be null if not found; 'exists' validation for vaaz_center_id covers this.
-            // We proceed if $vaazCenter is found and its event_id does not match.
-            if ($vaazCenter && $vaazCenter->event_id != $targetEventIdForComparison) {
-                return response()->json(['message' => 'The selected Vaaz Center does not belong to the specified event.'], 422);
+        foreach ($validatedPreferences as $preferenceData) {
+            if (!$this->isFamilyMember($preferenceData['its_id'])) {
+                return response()->json(['message' => 'Authorization failed for one or more ITS numbers.'], 403);
             }
         }
 
-        // Cross-reference Block (if provided)
-        if (array_key_exists('block_id', $validatedData) && $validatedData['block_id'] !== null) {
-            $block = Block::find($validatedData['block_id']); // $block is guaranteed by 'exists' rule if ID is valid
+        try {
+            DB::transaction(function () use ($validatedPreferences, &$createdPreferences) {
+                foreach ($validatedPreferences as $preferenceData) {
+                    $targetEventId = $preferenceData['event_id'];
 
-            // Block must exist and be associated with a VaazCenter for further checks.
-            if (!$block || !$block->vaazCenter) {
-                return response()->json(['message' => 'Selected Block is invalid or not properly associated with a Vaaz Center.'], 422);
-            }
+                    if (isset($preferenceData['vaaz_center_id'])) {
+                        $vaazCenter = VaazCenter::find($preferenceData['vaaz_center_id']);
+                        if ($vaazCenter && $vaazCenter->event_id != $targetEventId) {
+                            throw new \Exception('The selected Vaaz Center does not belong to the specified event for ITS ' . $preferenceData['its_id']);
+                        }
+                    }
 
-            // 1. Check: Block's own VaazCenter must belong to the target Event.
-            if ($block->vaazCenter->event_id != $targetEventIdForComparison) {
-                return response()->json(['message' => 'The selected Block (via its Vaaz Center) does not belong to the specified event.'], 422);
-            }
+                    if (isset($preferenceData['block_id'])) {
+                        $block = Block::find($preferenceData['block_id']);
+                        if (!$block || !$block->vaazCenter || $block->vaazCenter->event_id != $targetEventId) {
+                            throw new \Exception('The selected Block does not belong to the specified event for ITS ' . $preferenceData['its_id']);
+                        }
+                        if (isset($preferenceData['vaaz_center_id']) && $block->vaaz_center_id != $preferenceData['vaaz_center_id']) {
+                            throw new \Exception('The selected Block does not belong to the specified Vaaz Center for ITS ' . $preferenceData['its_id']);
+                        }
+                    }
 
-            // 2. Check: If a vaaz_center_id was ALSO explicitly provided in the request for the PassPreference (and is not null),
-            //    ensure this Block belongs to THAT specific VaazCenter.
-            if (array_key_exists('vaaz_center_id', $validatedData) && $validatedData['vaaz_center_id'] !== null) {
-                if ($block->vaaz_center_id != $validatedData['vaaz_center_id']) {
-                    return response()->json(['message' => 'The selected Block does not belong to the specified Vaaz Center.'], 422);
+                    if (isset($preferenceData['vaaz_center_id'])) {
+                        $vaazCenter = VaazCenter::find($preferenceData['vaaz_center_id']);
+                        if ($vaazCenter && $vaazCenter->est_capacity > 0) {
+                            $currentPassesInCenter = PassPreference::where('vaaz_center_id', $vaazCenter->id)->count();
+                            if ($currentPassesInCenter >= $vaazCenter->est_capacity) {
+                                throw new \Exception('Selected Vaaz Center is full for ITS ' . $preferenceData['its_id']);
+                            }
+                        }
+                    }
+
+                    if (isset($preferenceData['block_id'])) {
+                        $block = Block::find($preferenceData['block_id']);
+                        if ($block && $block->capacity > 0) {
+                            $currentPassesCount = PassPreference::where('block_id', $block->id)->count();
+                            if ($currentPassesCount >= $block->capacity) {
+                                throw new \Exception('Selected block is full for ITS ' . $preferenceData['its_id']);
+                            }
+                        }
+                    }
+
+                    $passPreference = PassPreference::create($preferenceData);
+                    $createdPreferences[] = $passPreference->load(['block', 'vaazCenter']);
                 }
-            }
+            });
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
         }
 
-        // Vaaz Center Capacity Check (only if vaaz_center_id is provided and not null)
-        if (array_key_exists('vaaz_center_id', $validatedData) && $validatedData['vaaz_center_id'] !== null) {
-            $vaazCenter = VaazCenter::find($validatedData['vaaz_center_id']);
-            // 'exists' validation handles if $vaazCenter is null, but defensive check is fine.
-            if ($vaazCenter) { 
-                $currentPassesInCenter = PassPreference::where('vaaz_center_id', $vaazCenter->id)->count();
-                if ($vaazCenter->est_capacity > 0 && $currentPassesInCenter >= $vaazCenter->est_capacity) {
-                    return response()->json(['message' => 'Selected Vaaz Center is full. Cannot issue more passes.'], 422);
-                }
-            }
-        }
-
-        // Block Capacity Check (only if block_id is provided and not null)
-        if (array_key_exists('block_id', $validatedData) && $validatedData['block_id'] !== null) {
-            $block = Block::find($validatedData['block_id']);
-            // 'exists' validation handles if $block is null, but defensive check is fine.
-            if ($block) {
-                $currentPassesCount = PassPreference::where('block_id', $block->id)->count();
-                // Ensure block capacity is a positive number before checking
-                if ($block->capacity > 0 && $currentPassesCount >= $block->capacity) {
-                    return response()->json(['message' => 'Selected block is full. Cannot issue more passes.'], 422);
-                }
-            }
-        }
-
-        // Eloquent will handle missing keys by inserting NULL if the DB column is nullable.
-        $passPreference = PassPreference::create($validatedData);
-
-        return response()->json($passPreference->load(['block', 'vaazCenter']), 201);
+        return response()->json($createdPreferences, 201);
     }
 
     /**
@@ -289,131 +329,134 @@ class PassPreferenceController extends Controller
      *      path="/api/pass-preferences",
      *      operationId="updatePassPreference",
      *      tags={"Pass Preferences"},
-     *      summary="Update an existing pass preference",
-     *      description="Updates an existing pass preference record identified by its ITS ID. The ITS ID in the body is expected to be encrypted.",
+     *      summary="Update one or more existing pass preferences",
+     *      description="Updates one or more existing pass preference records in a single transaction. Each object in the array must contain an 'its_id' to identify the record.",
      *      security={{"bearerAuth":{}}},
      *      @OA\RequestBody(
      *          required=true,
-     *          description="Pass preference data to update. its_id is required to identify the record.",
+     *          description="An array of pass preference data objects to update.",
      *          @OA\JsonContent(
-     *              required={"its_id"},
-     *              @OA\Property(property="its_id", type="string", description="Encrypted ITS ID of the mumineen whose preference is to be updated."),
-     *              @OA\Property(property="event_id", type="integer", nullable=true, description="ID of the event"),
-     *              @OA\Property(property="pass_type", type="string", enum={"RAHAT", "CHAIR", "GENERAL", "MUM_WITH_KIDS"}, nullable=true, description="Type of pass"),
-     *              @OA\Property(property="block_id", type="integer", nullable=true, description="ID of the block"),
-     *              @OA\Property(property="vaaz_center_id", type="integer", nullable=true, description="ID of the Vaaz center")
+     *              type="array",
+     *              @OA\Items(
+     *                  required={"its_id"},
+     *                  @OA\Property(property="its_id", type="string", description="Encrypted ITS ID of the mumineen whose preference is to be updated."),
+     *                  @OA\Property(property="event_id", type="integer", nullable=true, description="ID of the event"),
+     *                  @OA\Property(property="pass_type", type="string", enum={"RAHAT", "CHAIR", "GENERAL", "MUM_WITH_KIDS"}, nullable=true, description="Type of pass"),
+     *                  @OA\Property(property="block_id", type="integer", nullable=true, description="ID of the block"),
+     *                  @OA\Property(property="vaaz_center_id", type="integer", nullable=true, description="ID of the Vaaz center")
+     *              )
      *          )
      *      ),
      *      @OA\Response(
      *          response=200,
-     *          description="Pass preference updated successfully",
-     *          @OA\JsonContent(type="object", example={"id": 1, "its_id": 12345, "event_id": 1, "pass_type": "RAHAT", "block_id": 1, "vaaz_center_id": 1, "created_at": "2023-01-01T00:00:00.000000Z", "updated_at": "2023-01-01T00:00:00.000000Z"})
+     *          description="Pass preferences updated successfully",
+     *          @OA\JsonContent(type="object", example={"message": "Pass preferences updated successfully."})
      *      ),
      *      @OA\Response(
      *          response=404,
-     *          description="Pass Preference not found",
-     *          @OA\JsonContent(type="object", example={"message": "Pass Preference not found for the given ITS number."})
+     *          description="Pass Preference not found for one or more records",
+     *          @OA\JsonContent(type="object", example={"message": "Pass Preference not found for ITS: 12345678."})
+     *      ),
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthenticated",
+     *          @OA\JsonContent(type="object", example={"message": "Unauthenticated."})
+     *      ),
+     *      @OA\Response(
+     *          response=403,
+     *          description="Forbidden. User is not authorized to update a preference for one or more ITS numbers.",
+     *          @OA\JsonContent(type="object", example={"message": "Authorization failed for one or more ITS numbers."})
      *      ),
      *      @OA\Response(
      *          response=422,
      *          description="Validation error or business logic error",
-     *          @OA\JsonContent(type="object", example={"event_id": {"The selected event id is invalid."}})
+     *          @OA\JsonContent(type="object", example={"message": "Error for ITS 12345678: The selected block is full."})
      *      )
      * )
      * Update the specified resource in storage.
      */
     public function update(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'its_id' => 'required|integer|exists:pass_preferences,its_id',
-            'event_id' => 'sometimes|required|integer|exists:events,id', // Required if present
-            'pass_type' => ['sometimes', 'nullable', Rule::enum(PassType::class)],
-            'block_id' => 'sometimes|nullable|integer|exists:blocks,id',
-            'vaaz_center_id' => 'sometimes|nullable|integer|exists:vaaz_centers,id',
+        $preferencesData = $request->all();
+
+        if (!is_array($preferencesData) || empty($preferencesData) || !isset($preferencesData[0])) {
+            return response()->json(['message' => 'Request body must be a non-empty array of pass preferences.'], 400);
+        }
+
+        $validator = Validator::make($preferencesData, [
+            '*.its_id' => 'required|integer|exists:pass_preferences,its_id',
+            '*.event_id' => 'sometimes|required|integer|exists:events,id',
+            '*.pass_type' => ['sometimes', 'nullable', Rule::enum(PassType::class)],
+            '*.block_id' => 'sometimes|nullable|integer|exists:blocks,id',
+            '*.vaaz_center_id' => 'sometimes|nullable|integer|exists:vaaz_centers,id',
         ]);
 
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);
         }
 
-        $validatedData = $validator->validated();
-        $passPreference = PassPreference::where('its_id', $validatedData['its_id'])->first();
+        $validatedPreferences = $validator->validated();
 
-        if (!$passPreference) {
-            return response()->json(['message' => 'Pass Preference not found for the given ITS number.'], 404);
-        }
-
-        // Determine the target event_id for cross-referencing
-        $targetEventId = array_key_exists('event_id', $validatedData) ? $validatedData['event_id'] : $passPreference->event_id;
-        $targetEvent = Event::find($targetEventId);
-
-        if (!$targetEvent) {
-            // This should ideally be caught by 'exists:events,id' validation if event_id is being updated
-            // Or implies an issue if we are using an existing passPreference's event_id that's somehow invalid.
-            return response()->json(['message' => 'Target event not found for cross-referencing.'], 422); 
-        }
-
-        // Cross-reference Vaaz Center with the target Event
-        if (array_key_exists('vaaz_center_id', $validatedData) && $validatedData['vaaz_center_id'] !== null) {
-            $vaazCenter = VaazCenter::find($validatedData['vaaz_center_id']);
-            if ($vaazCenter && $vaazCenter->event_id != $targetEvent->id) {
-                return response()->json(['message' => 'The selected Vaaz Center does not belong to the target event.'], 422);
+        foreach ($validatedPreferences as $preferenceData) {
+            if (!$this->isFamilyMember($preferenceData['its_id'])) {
+                return response()->json(['message' => 'Authorization failed for one or more ITS numbers.'], 403);
             }
         }
 
-        // Cross-reference Block with the target Event (via Block's VaazCenter)
-        if (array_key_exists('block_id', $validatedData) && $validatedData['block_id'] !== null) {
-            $block = Block::find($validatedData['block_id']);
-            // Ensure block exists and is associated with a VaazCenter that belongs to the target event
-            if ($block && (!$block->vaazCenter || $block->vaazCenter->event_id != $targetEvent->id)) {
-                return response()->json(['message' => 'The selected Block does not belong to the target event.'], 422);
-            }
-        }
+        try {
+            DB::transaction(function () use ($validatedPreferences) {
+                foreach ($validatedPreferences as $preferenceData) {
+                    $passPreference = PassPreference::where('its_id', $preferenceData['its_id'])->lockForUpdate()->first();
 
-        // Vaaz Center Capacity Check (if center is being changed or set)
-        if (array_key_exists('vaaz_center_id', $validatedData)) {
-            $newVaazCenterId = $validatedData['vaaz_center_id'];
-            if ($passPreference->vaaz_center_id != $newVaazCenterId && $newVaazCenterId !== null) {
-                $newVaazCenter = VaazCenter::find($newVaazCenterId);
-                if ($newVaazCenter) {
-                    $currentPassesInNewCenter = PassPreference::where('vaaz_center_id', $newVaazCenter->id)->count();
-                    if ($newVaazCenter->est_capacity > 0 && $currentPassesInNewCenter >= $newVaazCenter->est_capacity) {
-                        return response()->json(['message' => 'New selected Vaaz Center is full. Cannot move pass.'], 422);
+                    if (!$passPreference) {
+                        throw new \Exception("Pass Preference not found for ITS: {$preferenceData['its_id']}.", 404);
                     }
+
+                    $targetEventId = $preferenceData['event_id'] ?? $passPreference->event_id;
+
+                    if (isset($preferenceData['vaaz_center_id'])) {
+                        $vaazCenter = VaazCenter::find($preferenceData['vaaz_center_id']);
+                        if ($vaazCenter && $vaazCenter->event_id != $targetEventId) {
+                            throw new \Exception("Error for ITS {$preferenceData['its_id']}: The selected Vaaz Center does not belong to the target event.", 422);
+                        }
+                    }
+
+                    if (isset($preferenceData['block_id'])) {
+                        $block = Block::find($preferenceData['block_id']);
+                        if ($block && (!$block->vaazCenter || $block->vaazCenter->event_id != $targetEventId)) {
+                            throw new \Exception("Error for ITS {$preferenceData['its_id']}: The selected Block does not belong to the target event.", 422);
+                        }
+                    }
+
+                    if (isset($preferenceData['vaaz_center_id']) && $passPreference->vaaz_center_id != $preferenceData['vaaz_center_id']) {
+                        $newVaazCenter = VaazCenter::find($preferenceData['vaaz_center_id']);
+                        if ($newVaazCenter && $newVaazCenter->est_capacity > 0) {
+                            $count = PassPreference::where('vaaz_center_id', $newVaazCenter->id)->count();
+                            if ($count >= $newVaazCenter->est_capacity) {
+                                throw new \Exception("Error for ITS {$preferenceData['its_id']}: New selected Vaaz Center is full.", 422);
+                            }
+                        }
+                    }
+
+                    if (isset($preferenceData['block_id']) && $passPreference->block_id != $preferenceData['block_id']) {
+                        $newBlock = Block::find($preferenceData['block_id']);
+                        if ($newBlock && $newBlock->capacity > 0) {
+                            $count = PassPreference::where('block_id', $newBlock->id)->count();
+                            if ($count >= $newBlock->capacity) {
+                                throw new \Exception("Error for ITS {$preferenceData['its_id']}: New selected block is full.", 422);
+                            }
+                        }
+                    }
+
+                    $passPreference->update($preferenceData);
                 }
-            }
+            });
+        } catch (\Exception $e) {
+            $statusCode = $e->getCode() === 404 ? 404 : 422;
+            return response()->json(['message' => $e->getMessage()], $statusCode);
         }
 
-        // If block_id is being changed, check capacity of the new block
-        if (array_key_exists('block_id', $validatedData)) {
-            $newBlockId = $validatedData['block_id'];
-            if ($passPreference->block_id != $newBlockId && $newBlockId !== null) {
-                $newBlock = Block::find($newBlockId);
-                if (!$newBlock) {
-                    return response()->json(['message' => 'New selected block not found.'], 404);
-                }
-
-                $currentPassesInNewBlock = PassPreference::where('block_id', $newBlock->id)->count();
-                if ($currentPassesInNewBlock >= $newBlock->capacity) {
-                    return response()->json(['message' => 'New selected block is full. Cannot move pass.'], 422);
-                }
-            }
-        }
-
-        // Update fields if they are present in the validated data
-        if (array_key_exists('block_id', $validatedData)) {
-            $passPreference->block_id = $validatedData['block_id'];
-        }
-        if (array_key_exists('vaaz_center_id', $validatedData)) {
-            $passPreference->vaaz_center_id = $validatedData['vaaz_center_id'];
-        }
-        if (array_key_exists('event_id', $validatedData)) { // Add event_id update
-            $passPreference->event_id = $validatedData['event_id'];
-        }
-        
-        $passPreference->save();
-
-        return response()->json($passPreference->load(['block', 'vaazCenter']));
+        return response()->json(['message' => 'Pass preferences updated successfully.']);
     }
 
     /**
@@ -433,8 +476,19 @@ class PassPreferenceController extends Controller
      *          )
      *      ),
      *      @OA\Response(
-     *          response=204,
-     *          description="Pass preference deleted successfully"
+     *          response=200,
+     *          description="Pass preference deleted successfully",
+     *          @OA\JsonContent(type="object", example={"message": "Pass Preference deleted successfully."})
+     *      ),
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthenticated",
+     *          @OA\JsonContent(type="object", example={"message": "Unauthenticated."})
+     *      ),
+     *      @OA\Response(
+     *          response=403,
+     *          description="Forbidden",
+     *          @OA\JsonContent(type="object", example={"message": "You are not authorized to delete this pass preference."})
      *      ),
      *      @OA\Response(
      *          response=404,
@@ -456,19 +510,26 @@ class PassPreferenceController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422); // Or 400 for bad request format
+            return response()->json($validator->errors(), 422);
         }
 
-        $passPreference = PassPreference::where('its_id', $request->input('its_id'))->first();
+        $targetItsId = $request->input('its_id');
 
-        // This check is technically covered by 'exists' rule, but good for explicit error message
+        // Authorization Check
+        if (!$this->isFamilyMember($targetItsId)) {
+            return response()->json(['message' => 'You are not authorized to delete this pass preference.'], 403);
+        }
+
+        $passPreference = PassPreference::where('its_id', $targetItsId)->first();
+
+        // Defensive check, though 'exists' rule should prevent this.
         if (!$passPreference) {
             return response()->json(['message' => 'Pass Preference not found for the given ITS number.'], 404);
         }
 
         $passPreference->delete();
 
-        return response()->json(null, 204);
+        return response()->json(['message' => 'Pass Preference deleted successfully.']);
     }
 
     /**
@@ -494,7 +555,36 @@ class PassPreferenceController extends Controller
      */
     public function getPassTypes(): JsonResponse
     {
-        $passTypes = array_map(fn($case) => $case->value, PassType::cases());
-        return response()->json($passTypes);
+        return response()->json(PassType::cases());
+    }
+
+    /**
+     * Check if a given ITS ID belongs to the authenticated user's family.
+     *
+     * @param int $targetItsId The ITS ID to check.
+     * @return bool True if the target is in the same family, false otherwise.
+     */
+    private function isFamilyMember($targetItsId): bool
+    {
+        $currentUser = auth()->user();
+
+        // If there's no authenticated user or they don't have an ITS ID, deny access.
+        if (!$currentUser || !isset($currentUser->its_id)) {
+            return false;
+        }
+
+        $currentUserItsId = $currentUser->its_id;
+
+        // Get HOF ID for both the current user and the target user.
+        $currentUserRecord = Mumineen::where('id', $currentUserItsId)->first(['hof_id']);
+        $targetUserRecord = Mumineen::where('id', $targetItsId)->first(['hof_id']);
+
+        // If either record doesn't exist, or their hof_id is null, they can't be in the same family.
+        if (!$currentUserRecord || !$targetUserRecord || is_null($currentUserRecord->hof_id) || is_null($targetUserRecord->hof_id)) {
+            return false;
+        }
+
+        // They are in the same family if their HOF ID is the same and not null.
+        return $currentUserRecord->hof_id === $targetUserRecord->hof_id;
     }
 }

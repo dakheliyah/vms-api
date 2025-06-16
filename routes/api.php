@@ -40,18 +40,15 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::prefix('mumineen')->group(function () {
     Route::post('/', [MumineenController::class, 'store']);
     
-    // Apply decryption middleware to routes that use its_id in GET query parameters
-    Route::middleware('decrypt.its_id')->group(function () {
-        Route::get('/', [MumineenController::class, 'indexOrShow']); // Using ?its_id=value or no params for index
-        Route::get('/family-by-its-id', [MumineenController::class, 'getFamilyByItsId']); // Using ?its_id=value
-    });
+    Route::get('/', [MumineenController::class, 'indexOrShow']); // Using ?its_id=value or no params for index
+    Route::get('/family-by-its-id', [MumineenController::class, 'getFamilyByItsId']); // Using ?its_id=value
     
     Route::put('/{its_id}', [MumineenController::class, 'update']);
     Route::delete('/{its_id}', [MumineenController::class, 'destroy']);
 });
 
 // Pass Preference API Routes
-Route::prefix('pass-preferences')->middleware('decrypt.its_id')->group(function () {
+Route::prefix('pass-preferences')->group(function () {
     Route::get('/', [PassPreferenceController::class, 'indexOrShow']);
     Route::post('/', [PassPreferenceController::class, 'store']);
     Route::put('/', [PassPreferenceController::class, 'update']);

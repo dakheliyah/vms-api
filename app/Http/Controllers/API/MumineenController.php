@@ -14,31 +14,34 @@ class MumineenController extends Controller
      * Display either a listing of all Mumineen or a specific one based on query parameter.
      * 
      * @OA\Get(
-     *     path="/api/mumineen",
-     *     tags={"Mumineen"},
-     *     summary="Get all Mumineen records or a specific one",
-     *     description="Returns all Mumineen records or a specific one if its_id query parameter is provided",
-     *     operationId="getMumineenOrList",
-     *     @OA\Parameter(
-     *         name="its_id",
-     *         in="query",
-     *         description="ITS ID of Mumineen to retrieve (optional)",
-     *         required=false,
-     *         @OA\Schema(type="string")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Successful operation",
-     *         @OA\JsonContent(type="object")
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Mumineen not found",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=false),
-     *             @OA\Property(property="message", type="string", example="Mumineen not found")
-     *         )
-     *     )
+     *      path="/api/mumineen",
+     *      operationId="getMumineenOrList",
+     *      tags={"Mumineen"},
+     *      summary="Get all Mumineen records or a specific one",
+     *      description="Returns all Mumineen records if no ITS ID is provided. If an encrypted ITS ID is provided in the query, it returns the specific record. Requires authentication.",
+     *      security={{"bearerAuth":{}}},
+     *      @OA\Parameter(
+     *          name="its_id",
+     *          in="query",
+     *          description="Encrypted ITS ID of the Mumineen to retrieve (optional).",
+     *          required=false,
+     *          @OA\Schema(type="string")
+     *      ),
+     *      @OA\Response(
+     *          response=200,
+     *          description="Successful operation",
+     *          @OA\JsonContent(type="object", example={"success": true, "data": {}})
+     *      ),
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthenticated",
+     *          @OA\JsonContent(type="object", example={"message": "Unauthenticated."})
+     *      ),
+     *      @OA\Response(
+     *          response=404,
+     *          description="Mumineen not found",
+     *          @OA\JsonContent(type="object", example={"success": false, "message": "Mumineen not found"})
+     *      )
      * )
      *
      * @param Request $request
@@ -80,39 +83,41 @@ class MumineenController extends Controller
      * Store a newly created Mumineen record in database.
      * 
      * @OA\Post(
-     *     path="/api/mumineen",
-     *     tags={"Mumineen"},
-     *     summary="Create a new Mumineen record",
-     *     description="Store a new Mumineen record in the database",
-     *     operationId="storeMumineen",
-     *     @OA\RequestBody(
-     *         required=true,
-     *         description="Mumineen data",
-     *         @OA\JsonContent(
-     *             required={"its_id", "full_name", "gender"},
-     *             @OA\Property(property="its_id", type="string", example="ITS123456"),
-     *             @OA\Property(property="eits_id", type="string", example="EITS123456"),
-     *             @OA\Property(property="hof_id", type="string", example="HOF123456"),
-     *             @OA\Property(property="full_name", type="string", example="John Doe"),
-     *             @OA\Property(property="gender", type="string", example="male", enum={"male", "female", "other"}),
-     *             @OA\Property(property="age", type="integer", example=30),
-     *             @OA\Property(property="mobile", type="string", example="+1234567890"),
-     *             @OA\Property(property="country", type="string", example="United States")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=201,
-     *         description="Mumineen record created successfully",
-     *         @OA\JsonContent(ref="#/components/schemas/Mumineen")
-     *     ),
-     *     @OA\Response(
-     *         response=422,
-     *         description="Validation error",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="message", type="string", example="The given data was invalid."),
-     *             @OA\Property(property="errors", type="object")
-     *         )
-     *     )
+     *      path="/api/mumineen",
+     *      operationId="storeMumineen",
+     *      tags={"Mumineen"},
+     *      summary="Create a new Mumineen record",
+     *      description="Stores a new Mumineen record. The 'its_id' is expected to be encrypted. Requires authentication.",
+     *      security={{"bearerAuth":{}}},
+     *      @OA\RequestBody(
+     *          required=true,
+     *          description="Mumineen data object. `its_id` must be unique.",
+     *          @OA\JsonContent(
+     *              required={"its_id", "full_name", "gender"},
+     *              @OA\Property(property="its_id", type="string", description="Encrypted ITS ID. Must be unique.", example="encrypted_string"),
+     *              @OA\Property(property="hof_id", type="string", description="Encrypted ITS ID of the Head of Family.", example="encrypted_string"),
+     *              @OA\Property(property="full_name", type="string", example="John Doe"),
+     *              @OA\Property(property="gender", type="string", example="male", enum={"male", "female"}),
+     *              @OA\Property(property="age", type="integer", example=30),
+     *              @OA\Property(property="mobile", type="string", example="1234567890"),
+     *              @OA\Property(property="country", type="string", example="United States")
+     *          )
+     *      ),
+     *      @OA\Response(
+     *          response=201,
+     *          description="Mumineen record created successfully",
+     *          @OA\JsonContent(ref="#/components/schemas/Mumineen")
+     *      ),
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthenticated",
+     *          @OA\JsonContent(type="object", example={"message": "Unauthenticated."})
+     *      ),
+     *      @OA\Response(
+     *          response=422,
+     *          description="Validation error",
+     *          @OA\JsonContent(type="object", example={"message": "The given data was invalid.", "errors": {}})
+     *      )
      * )
      *
      * @param Request $request
@@ -152,31 +157,34 @@ class MumineenController extends Controller
      * Display the specified Mumineen record.
      * 
      * @OA\Get(
-     *     path="/api/mumineen/{its_id}",
-     *     tags={"Mumineen"},
-     *     summary="Get a Mumineen record",
-     *     description="Returns a specific Mumineen record by ITS ID",
-     *     operationId="getMumineen",
-     *     @OA\Parameter(
-     *         name="its_id",
-     *         in="path",
-     *         description="ITS ID of Mumineen to retrieve",
-     *         required=true,
-     *         @OA\Schema(type="string")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Successful operation",
-     *         @OA\JsonContent(ref="#/components/schemas/Mumineen")
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Mumineen not found",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=false),
-     *             @OA\Property(property="message", type="string", example="Mumineen not found")
-     *         )
-     *     )
+     *      path="/api/mumineen/{its_id}",
+     *      operationId="getMumineen",
+     *      tags={"Mumineen"},
+     *      summary="Get a specific Mumineen record",
+     *      description="Returns a specific Mumineen record by their encrypted ITS ID. Requires authentication.",
+     *      security={{"bearerAuth":{}}},
+     *      @OA\Parameter(
+     *          name="its_id",
+     *          in="path",
+     *          description="Encrypted ITS ID of the Mumineen to retrieve.",
+     *          required=true,
+     *          @OA\Schema(type="string")
+     *      ),
+     *      @OA\Response(
+     *          response=200,
+     *          description="Successful operation",
+     *          @OA\JsonContent(ref="#/components/schemas/Mumineen")
+     *      ),
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthenticated",
+     *          @OA\JsonContent(type="object", example={"message": "Unauthenticated."})
+     *      ),
+     *      @OA\Response(
+     *          response=404,
+     *          description="Mumineen not found",
+     *          @OA\JsonContent(type="object", example={"success": false, "message": "Mumineen not found"})
+     *      )
      * )
      *
      * @param Request $request
@@ -214,44 +222,49 @@ class MumineenController extends Controller
      * Update the specified Mumineen record.
      * 
      * @OA\Put(
-     *     path="/api/mumineen/{its_id}",
-     *     tags={"Mumineen"},
-     *     summary="Update a Mumineen record",
-     *     description="Update a specific Mumineen record by ITS ID",
-     *     operationId="updateMumineen",
-     *     @OA\Parameter(
-     *         name="its_id",
-     *         in="path",
-     *         description="ITS ID of Mumineen to update",
-     *         required=true,
-     *         @OA\Schema(type="string")
-     *     ),
-     *     @OA\RequestBody(
-     *         required=true,
-     *         description="Mumineen data",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="eits_id", type="string", example="EITS123456"),
-     *             @OA\Property(property="hof_id", type="string", example="HOF123456"),
-     *             @OA\Property(property="full_name", type="string", example="John Doe"),
-     *             @OA\Property(property="gender", type="string", example="male", enum={"male", "female", "other"}),
-     *             @OA\Property(property="age", type="integer", example=30),
-     *             @OA\Property(property="mobile", type="string", example="+1234567890"),
-     *             @OA\Property(property="country", type="string", example="United States")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Mumineen record updated successfully",
-     *         @OA\JsonContent(ref="#/components/schemas/Mumineen")
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Mumineen not found"
-     *     ),
-     *     @OA\Response(
-     *         response=422,
-     *         description="Validation error"
-     *     )
+     *      path="/api/mumineen/{its_id}",
+     *      operationId="updateMumineen",
+     *      tags={"Mumineen"},
+     *      summary="Update a Mumineen record",
+     *      description="Updates a specific Mumineen record by their encrypted ITS ID. Requires authentication.",
+     *      security={{"bearerAuth":{}}},
+     *      @OA\Parameter(
+     *          name="its_id",
+     *          in="path",
+     *          description="Encrypted ITS ID of the Mumineen to update.",
+     *          required=true,
+     *          @OA\Schema(type="string")
+     *      ),
+     *      @OA\RequestBody(
+     *          required=true,
+     *          description="Mumineen data to update.",
+     *          @OA\JsonContent(
+     *              @OA\Property(property="hof_id", type="string", description="Encrypted ITS ID of the Head of Family.", example="encrypted_string"),
+     *              @OA\Property(property="full_name", type="string", example="John Doe"),
+     *              @OA\Property(property="gender", type="string", example="male", enum={"male", "female"}),
+     *              @OA\Property(property="age", type="integer", example=31),
+     *              @OA\Property(property="mobile", type="string", example="1234567890"),
+     *              @OA\Property(property="country", type="string", example="United States")
+     *          )
+     *      ),
+     *      @OA\Response(
+     *          response=200,
+     *          description="Mumineen record updated successfully",
+     *          @OA\JsonContent(ref="#/components/schemas/Mumineen")
+     *      ),
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthenticated",
+     *          @OA\JsonContent(type="object", example={"message": "Unauthenticated."})
+     *      ),
+     *      @OA\Response(
+     *          response=404,
+     *          description="Mumineen not found"
+     *      ),
+     *      @OA\Response(
+     *          response=422,
+     *          description="Validation error"
+     *      )
      * )
      *
      * @param Request $request
@@ -300,26 +313,33 @@ class MumineenController extends Controller
      * Remove the specified Mumineen record.
      * 
      * @OA\Delete(
-     *     path="/api/mumineen/{its_id}",
-     *     tags={"Mumineen"},
-     *     summary="Delete a Mumineen record",
-     *     description="Delete a specific Mumineen record by ITS ID",
-     *     operationId="deleteMumineen",
-     *     @OA\Parameter(
-     *         name="its_id",
-     *         in="path",
-     *         description="ITS ID of Mumineen to delete",
-     *         required=true,
-     *         @OA\Schema(type="string")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Mumineen record deleted successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Mumineen not found"
-     *     )
+     *      path="/api/mumineen/{its_id}",
+     *      operationId="deleteMumineen",
+     *      tags={"Mumineen"},
+     *      summary="Delete a Mumineen record",
+     *      description="Deletes a specific Mumineen record by their encrypted ITS ID. Requires authentication.",
+     *      security={{"bearerAuth":{}}},
+     *      @OA\Parameter(
+     *          name="its_id",
+     *          in="path",
+     *          description="Encrypted ITS ID of the Mumineen to delete.",
+     *          required=true,
+     *          @OA\Schema(type="string")
+     *      ),
+     *      @OA\Response(
+     *          response=200,
+     *          description="Mumineen record deleted successfully",
+     *          @OA\JsonContent(type="object", example={"success": true, "message": "Mumineen record deleted successfully"})
+     *      ),
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthenticated",
+     *          @OA\JsonContent(type="object", example={"message": "Unauthenticated."})
+     *      ),
+     *      @OA\Response(
+     *          response=404,
+     *          description="Mumineen not found"
+     *      )
      * )
      *
      * @param string $id
@@ -348,35 +368,34 @@ class MumineenController extends Controller
      * Get all family members of a Mumineen by its_id.
      * 
      * @OA\Get(
-     *     path="/api/mumineen/family-by-its-id/{its_id}",
-     *     tags={"Mumineen"},
-     *     summary="Get all family members by its_id",
-     *     description="Finds the HOF ITS ID for the given member and returns all members sharing that HOF ITS ID",
-     *     operationId="getMumineenFamilyByItsId",
-     *     @OA\Parameter(
-     *         name="its_id",
-     *         in="path",
-     *         description="ITS ID of the Mumineen to find family members for",
-     *         required=true,
-     *         @OA\Schema(type="integer", format="int64", example=20324227)
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Successful operation",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=true),
-     *             @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/Mumineen")),
-     *             @OA\Property(property="message", type="string", example="Family members retrieved successfully")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Mumineen not found",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=false),
-     *             @OA\Property(property="message", type="string", example="Mumineen not found or no HOF ITS ID available")
-     *         )
-     *     )
+     *      path="/api/mumineen/family-by-its-id/{its_id}",
+     *      operationId="getMumineenFamilyByItsId",
+     *      tags={"Mumineen"},
+     *      summary="Get all family members by ITS ID",
+     *      description="Finds the Head of Family (HOF) for the given member (by their encrypted ITS ID) and returns all members of that family. Requires authentication.",
+     *      security={{"bearerAuth":{}}},
+     *      @OA\Parameter(
+     *          name="its_id",
+     *          in="path",
+     *          description="Encrypted ITS ID of a family member.",
+     *          required=true,
+     *          @OA\Schema(type="string")
+     *      ),
+     *      @OA\Response(
+     *          response=200,
+     *          description="Family members retrieved successfully",
+     *          @OA\JsonContent(type="object", example={"success": true, "data": {}})
+     *      ),
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthenticated",
+     *          @OA\JsonContent(type="object", example={"message": "Unauthenticated."})
+     *      ),
+     *      @OA\Response(
+     *          response=404,
+     *          description="Mumineen not found or no HOF ITS ID available",
+     *          @OA\JsonContent(type="object", example={"success": false, "message": "Mumineen not found or no HOF ITS ID available"})
+     *      )
      * )
      *
      * @param Request $request

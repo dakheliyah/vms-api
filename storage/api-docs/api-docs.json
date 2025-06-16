@@ -275,13 +275,13 @@
                     "Mumineen"
                 ],
                 "summary": "Get all Mumineen records or a specific one",
-                "description": "Returns all Mumineen records or a specific one if its_id query parameter is provided",
+                "description": "Returns all Mumineen records if no ITS ID is provided. If an encrypted ITS ID is provided in the query, it returns the specific record. Requires authentication.",
                 "operationId": "getMumineenOrList",
                 "parameters": [
                     {
                         "name": "its_id",
                         "in": "query",
-                        "description": "ITS ID of Mumineen to retrieve (optional)",
+                        "description": "Encrypted ITS ID of the Mumineen to retrieve (optional).",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -295,6 +295,23 @@
                             "application/json": {
                                 "schema": {
                                     "type": "object"
+                                },
+                                "example": {
+                                    "success": true,
+                                    "data": []
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Unauthenticated."
                                 }
                             }
                         }
@@ -304,32 +321,31 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": false
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Mumineen not found"
-                                        }
-                                    },
                                     "type": "object"
+                                },
+                                "example": {
+                                    "success": false,
+                                    "message": "Mumineen not found"
                                 }
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "post": {
                 "tags": [
                     "Mumineen"
                 ],
                 "summary": "Create a new Mumineen record",
-                "description": "Store a new Mumineen record in the database",
+                "description": "Stores a new Mumineen record. The 'its_id' is expected to be encrypted. Requires authentication.",
                 "operationId": "storeMumineen",
                 "requestBody": {
-                    "description": "Mumineen data",
+                    "description": "Mumineen data object. `its_id` must be unique.",
                     "required": true,
                     "content": {
                         "application/json": {
@@ -341,16 +357,14 @@
                                 ],
                                 "properties": {
                                     "its_id": {
+                                        "description": "Encrypted ITS ID. Must be unique.",
                                         "type": "string",
-                                        "example": "ITS123456"
-                                    },
-                                    "eits_id": {
-                                        "type": "string",
-                                        "example": "EITS123456"
+                                        "example": "encrypted_string"
                                     },
                                     "hof_id": {
+                                        "description": "Encrypted ITS ID of the Head of Family.",
                                         "type": "string",
-                                        "example": "HOF123456"
+                                        "example": "encrypted_string"
                                     },
                                     "full_name": {
                                         "type": "string",
@@ -360,8 +374,7 @@
                                         "type": "string",
                                         "enum": [
                                             "male",
-                                            "female",
-                                            "other"
+                                            "female"
                                         ],
                                         "example": "male"
                                     },
@@ -371,7 +384,7 @@
                                     },
                                     "mobile": {
                                         "type": "string",
-                                        "example": "+1234567890"
+                                        "example": "1234567890"
                                     },
                                     "country": {
                                         "type": "string",
@@ -394,26 +407,39 @@
                             }
                         }
                     },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Unauthenticated."
+                                }
+                            }
+                        }
+                    },
                     "422": {
                         "description": "Validation error",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "properties": {
-                                        "message": {
-                                            "type": "string",
-                                            "example": "The given data was invalid."
-                                        },
-                                        "errors": {
-                                            "type": "object"
-                                        }
-                                    },
                                     "type": "object"
+                                },
+                                "example": {
+                                    "message": "The given data was invalid.",
+                                    "errors": []
                                 }
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/mumineen/{its_id}": {
@@ -421,14 +447,14 @@
                 "tags": [
                     "Mumineen"
                 ],
-                "summary": "Get a Mumineen record",
-                "description": "Returns a specific Mumineen record by ITS ID",
+                "summary": "Get a specific Mumineen record",
+                "description": "Returns a specific Mumineen record by their encrypted ITS ID. Requires authentication.",
                 "operationId": "getMumineen",
                 "parameters": [
                     {
                         "name": "its_id",
                         "in": "path",
-                        "description": "ITS ID of Mumineen to retrieve",
+                        "description": "Encrypted ITS ID of the Mumineen to retrieve.",
                         "required": true,
                         "schema": {
                             "type": "string"
@@ -446,40 +472,52 @@
                             }
                         }
                     },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Unauthenticated."
+                                }
+                            }
+                        }
+                    },
                     "404": {
                         "description": "Mumineen not found",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": false
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Mumineen not found"
-                                        }
-                                    },
                                     "type": "object"
+                                },
+                                "example": {
+                                    "success": false,
+                                    "message": "Mumineen not found"
                                 }
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "put": {
                 "tags": [
                     "Mumineen"
                 ],
                 "summary": "Update a Mumineen record",
-                "description": "Update a specific Mumineen record by ITS ID",
+                "description": "Updates a specific Mumineen record by their encrypted ITS ID. Requires authentication.",
                 "operationId": "updateMumineen",
                 "parameters": [
                     {
                         "name": "its_id",
                         "in": "path",
-                        "description": "ITS ID of Mumineen to update",
+                        "description": "Encrypted ITS ID of the Mumineen to update.",
                         "required": true,
                         "schema": {
                             "type": "string"
@@ -487,19 +525,16 @@
                     }
                 ],
                 "requestBody": {
-                    "description": "Mumineen data",
+                    "description": "Mumineen data to update.",
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "properties": {
-                                    "eits_id": {
-                                        "type": "string",
-                                        "example": "EITS123456"
-                                    },
                                     "hof_id": {
+                                        "description": "Encrypted ITS ID of the Head of Family.",
                                         "type": "string",
-                                        "example": "HOF123456"
+                                        "example": "encrypted_string"
                                     },
                                     "full_name": {
                                         "type": "string",
@@ -509,18 +544,17 @@
                                         "type": "string",
                                         "enum": [
                                             "male",
-                                            "female",
-                                            "other"
+                                            "female"
                                         ],
                                         "example": "male"
                                     },
                                     "age": {
                                         "type": "integer",
-                                        "example": 30
+                                        "example": 31
                                     },
                                     "mobile": {
                                         "type": "string",
-                                        "example": "+1234567890"
+                                        "example": "1234567890"
                                     },
                                     "country": {
                                         "type": "string",
@@ -543,26 +577,44 @@
                             }
                         }
                     },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Unauthenticated."
+                                }
+                            }
+                        }
+                    },
                     "404": {
                         "description": "Mumineen not found"
                     },
                     "422": {
                         "description": "Validation error"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
             "delete": {
                 "tags": [
                     "Mumineen"
                 ],
                 "summary": "Delete a Mumineen record",
-                "description": "Delete a specific Mumineen record by ITS ID",
+                "description": "Deletes a specific Mumineen record by their encrypted ITS ID. Requires authentication.",
                 "operationId": "deleteMumineen",
                 "parameters": [
                     {
                         "name": "its_id",
                         "in": "path",
-                        "description": "ITS ID of Mumineen to delete",
+                        "description": "Encrypted ITS ID of the Mumineen to delete.",
                         "required": true,
                         "schema": {
                             "type": "string"
@@ -571,12 +623,41 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Mumineen record deleted successfully"
+                        "description": "Mumineen record deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "success": true,
+                                    "message": "Mumineen record deleted successfully"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Unauthenticated."
+                                }
+                            }
+                        }
                     },
                     "404": {
                         "description": "Mumineen not found"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/mumineen/family-by-its-id/{its_id}": {
@@ -584,70 +665,68 @@
                 "tags": [
                     "Mumineen"
                 ],
-                "summary": "Get all family members by its_id",
-                "description": "Finds the HOF ITS ID for the given member and returns all members sharing that HOF ITS ID",
+                "summary": "Get all family members by ITS ID",
+                "description": "Finds the Head of Family (HOF) for the given member (by their encrypted ITS ID) and returns all members of that family. Requires authentication.",
                 "operationId": "getMumineenFamilyByItsId",
                 "parameters": [
                     {
                         "name": "its_id",
                         "in": "path",
-                        "description": "ITS ID of the Mumineen to find family members for",
+                        "description": "Encrypted ITS ID of a family member.",
                         "required": true,
                         "schema": {
-                            "type": "integer",
-                            "format": "int64",
-                            "example": 20324227
+                            "type": "string"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Successful operation",
+                        "description": "Family members retrieved successfully",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/Mumineen"
-                                            }
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Family members retrieved successfully"
-                                        }
-                                    },
                                     "type": "object"
+                                },
+                                "example": {
+                                    "success": true,
+                                    "data": []
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Unauthenticated."
                                 }
                             }
                         }
                     },
                     "404": {
-                        "description": "Mumineen not found",
+                        "description": "Mumineen not found or no HOF ITS ID available",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": false
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Mumineen not found or no HOF ITS ID available"
-                                        }
-                                    },
                                     "type": "object"
+                                },
+                                "example": {
+                                    "success": false,
+                                    "message": "Mumineen not found or no HOF ITS ID available"
                                 }
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/pass-preferences/summary": {
@@ -750,6 +829,19 @@
                             }
                         }
                     },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Unauthenticated."
+                                }
+                            }
+                        }
+                    },
                     "422": {
                         "description": "Validation error",
                         "content": {
@@ -778,14 +870,14 @@
                 "tags": [
                     "Pass Preferences"
                 ],
-                "summary": "List all pass preferences or get a specific one by ITS ID",
-                "description": "Returns a list of all pass preferences or a single pass preference if an ITS ID is provided. The ITS ID is expected to be encrypted and will be decrypted by middleware.",
+                "summary": "Get a specific pass preference by ITS ID",
+                "description": "Returns a single pass preference if an ITS ID is provided. The user must be authorized to view the preference for the given ITS ID. Listing all preferences is restricted and will return an empty array.",
                 "operationId": "getPassPreferences",
                 "parameters": [
                     {
                         "name": "its_id",
                         "in": "query",
-                        "description": "Encrypted ITS ID of the mumineen to retrieve a specific pass preference. If not provided, lists all preferences.",
+                        "description": "Encrypted ITS ID of the mumineen to retrieve a specific pass preference. If not provided, returns an empty array.",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -794,37 +886,60 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Successful operation",
+                        "description": "Successful operation. Returns a single PassPreference object or an empty array.",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "description": "Can be a single PassPreference object or an array of PassPreference objects.",
                                     "type": "object"
                                 },
-                                "example": [
-                                    {
+                                "example": {
+                                    "id": 1,
+                                    "its_id": 12345,
+                                    "event_id": 1,
+                                    "pass_type": "RAHAT",
+                                    "block_id": 1,
+                                    "vaaz_center_id": 1,
+                                    "created_at": "2023-01-01T00:00:00.000000Z",
+                                    "updated_at": "2023-01-01T00:00:00.000000Z",
+                                    "block": {
                                         "id": 1,
-                                        "its_id": 12345,
-                                        "event_id": 1,
-                                        "pass_type": "RAHAT",
-                                        "block_id": 1,
-                                        "vaaz_center_id": 1,
-                                        "created_at": "2023-01-01T00:00:00.000000Z",
-                                        "updated_at": "2023-01-01T00:00:00.000000Z",
-                                        "block": {
-                                            "id": 1,
-                                            "name": "Block A"
-                                        },
-                                        "vaazCenter": {
-                                            "id": 1,
-                                            "name": "Center 1"
-                                        },
-                                        "event": {
-                                            "id": 1,
-                                            "name": "Event Name"
-                                        }
+                                        "name": "Block A"
+                                    },
+                                    "vaazCenter": {
+                                        "id": 1,
+                                        "name": "Center 1"
+                                    },
+                                    "event": {
+                                        "id": 1,
+                                        "name": "Event Name"
                                     }
-                                ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Unauthenticated."
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden. User is not authorized to view this preference.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "You are not authorized to view this pass preference."
+                                }
                             }
                         }
                     },
@@ -852,85 +967,107 @@
                 "tags": [
                     "Pass Preferences"
                 ],
-                "summary": "Update an existing pass preference",
-                "description": "Updates an existing pass preference record identified by its ITS ID. The ITS ID in the body is expected to be encrypted.",
+                "summary": "Update one or more existing pass preferences",
+                "description": "Updates one or more existing pass preference records in a single transaction. Each object in the array must contain an 'its_id' to identify the record.",
                 "operationId": "updatePassPreference",
                 "requestBody": {
-                    "description": "Pass preference data to update. its_id is required to identify the record.",
+                    "description": "An array of pass preference data objects to update.",
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
-                                "required": [
-                                    "its_id"
-                                ],
-                                "properties": {
-                                    "its_id": {
-                                        "description": "Encrypted ITS ID of the mumineen whose preference is to be updated.",
-                                        "type": "string"
+                                "type": "array",
+                                "items": {
+                                    "required": [
+                                        "its_id"
+                                    ],
+                                    "properties": {
+                                        "its_id": {
+                                            "description": "Encrypted ITS ID of the mumineen whose preference is to be updated.",
+                                            "type": "string"
+                                        },
+                                        "event_id": {
+                                            "description": "ID of the event",
+                                            "type": "integer",
+                                            "nullable": true
+                                        },
+                                        "pass_type": {
+                                            "description": "Type of pass",
+                                            "type": "string",
+                                            "enum": [
+                                                "RAHAT",
+                                                "CHAIR",
+                                                "GENERAL",
+                                                "MUM_WITH_KIDS"
+                                            ],
+                                            "nullable": true
+                                        },
+                                        "block_id": {
+                                            "description": "ID of the block",
+                                            "type": "integer",
+                                            "nullable": true
+                                        },
+                                        "vaaz_center_id": {
+                                            "description": "ID of the Vaaz center",
+                                            "type": "integer",
+                                            "nullable": true
+                                        }
                                     },
-                                    "event_id": {
-                                        "description": "ID of the event",
-                                        "type": "integer",
-                                        "nullable": true
-                                    },
-                                    "pass_type": {
-                                        "description": "Type of pass",
-                                        "type": "string",
-                                        "enum": [
-                                            "RAHAT",
-                                            "CHAIR",
-                                            "GENERAL",
-                                            "MUM_WITH_KIDS"
-                                        ],
-                                        "nullable": true
-                                    },
-                                    "block_id": {
-                                        "description": "ID of the block",
-                                        "type": "integer",
-                                        "nullable": true
-                                    },
-                                    "vaaz_center_id": {
-                                        "description": "ID of the Vaaz center",
-                                        "type": "integer",
-                                        "nullable": true
-                                    }
-                                },
-                                "type": "object"
+                                    "type": "object"
+                                }
                             }
                         }
                     }
                 },
                 "responses": {
                     "200": {
-                        "description": "Pass preference updated successfully",
+                        "description": "Pass preferences updated successfully",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "type": "object"
                                 },
                                 "example": {
-                                    "id": 1,
-                                    "its_id": 12345,
-                                    "event_id": 1,
-                                    "pass_type": "RAHAT",
-                                    "block_id": 1,
-                                    "vaaz_center_id": 1,
-                                    "created_at": "2023-01-01T00:00:00.000000Z",
-                                    "updated_at": "2023-01-01T00:00:00.000000Z"
+                                    "message": "Pass preferences updated successfully."
                                 }
                             }
                         }
                     },
                     "404": {
-                        "description": "Pass Preference not found",
+                        "description": "Pass Preference not found for one or more records",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "type": "object"
                                 },
                                 "example": {
-                                    "message": "Pass Preference not found for the given ITS number."
+                                    "message": "Pass Preference not found for ITS: 12345678."
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Unauthenticated."
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden. User is not authorized to update a preference for one or more ITS numbers.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Authorization failed for one or more ITS numbers."
                                 }
                             }
                         }
@@ -943,9 +1080,7 @@
                                     "type": "object"
                                 },
                                 "example": {
-                                    "event_id": [
-                                        "The selected event id is invalid."
-                                    ]
+                                    "message": "Error for ITS 12345678: The selected block is full."
                                 }
                             }
                         }
@@ -961,72 +1096,104 @@
                 "tags": [
                     "Pass Preferences"
                 ],
-                "summary": "Create a new pass preference",
-                "description": "Creates a new pass preference record. The ITS ID is expected to be encrypted.",
+                "summary": "Create one or more new pass preferences",
+                "description": "Creates one or more new pass preference records in a single transaction. The ITS ID is expected to be encrypted.",
                 "operationId": "storePassPreference",
                 "requestBody": {
-                    "description": "Pass preference data",
+                    "description": "An array of pass preference objects to create.",
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
-                                "required": [
-                                    "its_id",
-                                    "event_id"
-                                ],
-                                "properties": {
-                                    "its_id": {
-                                        "description": "Encrypted ITS ID of the mumineen. Unique for pass_preferences.",
-                                        "type": "string"
+                                "type": "array",
+                                "items": {
+                                    "required": [
+                                        "its_id",
+                                        "event_id"
+                                    ],
+                                    "properties": {
+                                        "its_id": {
+                                            "description": "Encrypted ITS ID of the mumineen. Must be unique.",
+                                            "type": "string"
+                                        },
+                                        "event_id": {
+                                            "description": "ID of the event",
+                                            "type": "integer"
+                                        },
+                                        "pass_type": {
+                                            "description": "Type of pass",
+                                            "type": "string",
+                                            "enum": [
+                                                "RAHAT",
+                                                "CHAIR",
+                                                "GENERAL",
+                                                "MUM_WITH_KIDS"
+                                            ],
+                                            "nullable": true
+                                        },
+                                        "block_id": {
+                                            "description": "ID of the block",
+                                            "type": "integer",
+                                            "nullable": true
+                                        },
+                                        "vaaz_center_id": {
+                                            "description": "ID of the Vaaz center",
+                                            "type": "integer",
+                                            "nullable": true
+                                        }
                                     },
-                                    "event_id": {
-                                        "description": "ID of the event",
-                                        "type": "integer"
-                                    },
-                                    "pass_type": {
-                                        "description": "Type of pass",
-                                        "type": "string",
-                                        "enum": [
-                                            "RAHAT",
-                                            "CHAIR",
-                                            "GENERAL",
-                                            "MUM_WITH_KIDS"
-                                        ],
-                                        "nullable": true
-                                    },
-                                    "block_id": {
-                                        "description": "ID of the block (must belong to a Vaaz Center associated with the event, and to the specified Vaaz Center if vaaz_center_id is also provided)",
-                                        "type": "integer",
-                                        "nullable": true
-                                    },
-                                    "vaaz_center_id": {
-                                        "description": "ID of the Vaaz center (must belong to the specified event)",
-                                        "type": "integer",
-                                        "nullable": true
-                                    }
-                                },
-                                "type": "object"
+                                    "type": "object"
+                                }
                             }
                         }
                     }
                 },
                 "responses": {
                     "201": {
-                        "description": "Pass preference created successfully",
+                        "description": "Pass preferences created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "example": {
+                                            "id": 1,
+                                            "its_id": 12345,
+                                            "event_id": 1,
+                                            "pass_type": "RAHAT",
+                                            "block_id": 1,
+                                            "vaaz_center_id": 1,
+                                            "created_at": "2023-01-01T00:00:00.000000Z",
+                                            "updated_at": "2023-01-01T00:00:00.000000Z"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "type": "object"
                                 },
                                 "example": {
-                                    "id": 1,
-                                    "its_id": 12345,
-                                    "event_id": 1,
-                                    "pass_type": "RAHAT",
-                                    "block_id": 1,
-                                    "vaaz_center_id": 1,
-                                    "created_at": "2023-01-01T00:00:00.000000Z",
-                                    "updated_at": "2023-01-01T00:00:00.000000Z"
+                                    "message": "Unauthenticated."
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden. User is not authorized to create a preference for one or more ITS numbers.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Authorization failed for one or more ITS numbers."
                                 }
                             }
                         }
@@ -1039,9 +1206,7 @@
                                     "type": "object"
                                 },
                                 "example": {
-                                    "its_id": [
-                                        "The its id has already been taken."
-                                    ]
+                                    "message": "The selected block is full for ITS 12345"
                                 }
                             }
                         }
@@ -1081,8 +1246,44 @@
                     }
                 },
                 "responses": {
-                    "204": {
-                        "description": "Pass preference deleted successfully"
+                    "200": {
+                        "description": "Pass preference deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Pass Preference deleted successfully."
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Unauthenticated."
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "You are not authorized to delete this pass preference."
+                                }
+                            }
+                        }
                     },
                     "404": {
                         "description": "Pass Preference not found",

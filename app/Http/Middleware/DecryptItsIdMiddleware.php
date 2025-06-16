@@ -15,24 +15,25 @@ class DecryptItsIdMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Check if its_id parameter exists and has a value.
-        if ($request->filled('its_id') || $request->route('its_id')) {
-            $encryptedId = $request->route('its_id') ?? $request->input('its_id');
+        // Check if the 'Token' header with the encrypted ITS ID exists.
+        if ($request->hasHeader('Token')) {
+            $encryptedId = $request->header('Token');
 
             if ($encryptedId) {
                 $decryptedId = $this->decrypt($encryptedId);
 
-                // If decryption fails, the custom decrypt returns null.
-                // We should return a proper error response instead of letting it crash.
+                // If decryption fails, return an error response.
                 if ($decryptedId === null) {
-                    return response()->json(['message' => 'The provided ITS ID is invalid or corrupted.'], 422);
+                    return response()->json(['message' => 'The provided Token is invalid or corrupted.'], 422);
                 }
 
-                // Update the request with the decrypted value.
-                if ($request->route('its_id')) {
-                    $request->route()->setParameter('its_id', $decryptedId);
-                } else {
-                    $request->merge(['its_id' => $decryptedId]);
+                // Merge the decrypted ITS ID into the request payload.
+                $request->merge(['its_id' => $decryptedId]);
+
+                // If a user is authenticated, attach the ITS ID to the user object.
+                // This makes it easily accessible in controllers via auth()->user()->its_id
+                if ($request->user()) {
+                    $request->user()->its_id = $decryptedId;
                 }
             }
         }
