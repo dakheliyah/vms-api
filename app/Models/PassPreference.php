@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Block;
+use App\Models\VaazCenter;
 
 class PassPreference extends Model
 {
@@ -18,6 +19,7 @@ class PassPreference extends Model
     protected $fillable = [
         'its_id',
         'block_id',
+        'vaaz_center_id',
     ];
 
     /**
@@ -26,5 +28,13 @@ class PassPreference extends Model
     public function block()
     {
         return $this->belongsTo(Block::class, 'block_id');
+    }
+
+    /**
+     * Get the Vaaz center that the pass preference belongs to.
+     */
+    public function vaazCenter()
+    {
+        return $this->belongsTo(VaazCenter::class, 'vaaz_center_id');
     }
 }

@@ -58,7 +58,7 @@ class PassPreferenceController extends Controller
     public function indexOrShow(Request $request)
     {
         if ($request->has('its_id')) {
-            $passPreference = PassPreference::where('its_id', $request->input('its_id'))->with('block')->first(); // Eager load block
+            $passPreference = PassPreference::where('its_id', $request->input('its_id'))->with(['block', 'vaazCenter'])->first(); 
             if (!$passPreference) {
                 return response()->json(['message' => 'Pass Preference not found for this ITS number'], 404);
             }
@@ -66,7 +66,7 @@ class PassPreferenceController extends Controller
         }
 
         // Consider pagination for `all()` if the list can grow large
-        return PassPreference::with('block')->get(); // Eager load block for all
+        return PassPreference::with(['block', 'vaazCenter'])->get(); 
     }
 
     /**
@@ -77,6 +77,7 @@ class PassPreferenceController extends Controller
         $validator = Validator::make($request->all(), [
             'its_id' => 'required|integer|unique:pass_preferences,its_id',
             'block_id' => 'required|exists:blocks,id',
+            'vaaz_center_id' => 'nullable|integer|exists:vaaz_centers,id', 
         ]);
 
         if ($validator->fails()) {
@@ -86,7 +87,7 @@ class PassPreferenceController extends Controller
         $validatedData = $validator->validated();
         $block = Block::find($validatedData['block_id']);
 
-        if (!$block) { // Should not happen due to 'exists' rule, but good practice
+        if (!$block) { 
             return response()->json(['message' => 'Selected block not found.'], 404);
         }
 
@@ -98,7 +99,7 @@ class PassPreferenceController extends Controller
 
         $passPreference = PassPreference::create($validatedData);
 
-        return response()->json($passPreference, 201);
+        return response()->json($passPreference->load(['block', 'vaazCenter']), 201);
     }
 
     /**
@@ -108,7 +109,8 @@ class PassPreferenceController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'its_id' => 'required|integer|exists:pass_preferences,its_id',
-            'block_id' => 'required|exists:blocks,id', // User must always provide the new block_id
+            'block_id' => 'required|exists:blocks,id', 
+            'vaaz_center_id' => 'nullable|integer|exists:vaaz_centers,id', 
         ]);
 
         if ($validator->fails()) {
@@ -126,7 +128,7 @@ class PassPreferenceController extends Controller
         // If block_id is being changed, check capacity of the new block
         if ($passPreference->block_id != $validatedData['block_id']) {
             $newBlock = Block::find($validatedData['block_id']);
-            if (!$newBlock) { // Should not happen due to 'exists' rule
+            if (!$newBlock) { 
                 return response()->json(['message' => 'New selected block not found.'], 404);
             }
 
@@ -136,11 +138,12 @@ class PassPreferenceController extends Controller
             }
         }
 
-        // Update only the block_id. ITS_ID is the identifier and should not be changed here.
+        // Update block_id and vaaz_center_id. ITS_ID is the identifier and should not be changed here.
         $passPreference->block_id = $validatedData['block_id'];
+        $passPreference->vaaz_center_id = $validatedData['vaaz_center_id'] ?? null; 
         $passPreference->save();
 
-        return response()->json($passPreference);
+        return response()->json($passPreference->load(['block', 'vaazCenter']));
     }
 
     /**
