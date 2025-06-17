@@ -15,6 +15,326 @@
         }
     ],
     "paths": {
+        "/api/accommodations": {
+            "get": {
+                "tags": [
+                    "Accommodations"
+                ],
+                "summary": "Get list of accommodations",
+                "description": "Returns list of accommodations, optionally filtered by miqaat_id, its_id (encrypted), or type.",
+                "operationId": "getAccommodationsList",
+                "parameters": [
+                    {
+                        "name": "miqaat_id",
+                        "in": "query",
+                        "description": "Filter by Miqaat ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "its_id",
+                        "in": "query",
+                        "description": "Filter by encrypted ITS ID (will be decrypted by middleware)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "description": "Filter by accommodation type",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Accommodation"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - User not authorized for the provided ITS ID or to list general accommodations without specific ITS ID filter if not admin (not implemented yet)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Accommodations"
+                ],
+                "summary": "Create new accommodation record",
+                "description": "Creates a new accommodation record. 'its_id' is expected to be encrypted.",
+                "operationId": "storeAccommodation",
+                "requestBody": {
+                    "description": "Accommodation object that needs to be added",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "miqaat_id",
+                                    "its_id",
+                                    "type",
+                                    "name",
+                                    "address"
+                                ],
+                                "properties": {
+                                    "miqaat_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "its_id": {
+                                        "description": "Encrypted ITS ID",
+                                        "type": "string",
+                                        "example": "encrypted_its_string"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "example": "Hotel"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Grand Hyatt"
+                                    },
+                                    "address": {
+                                        "type": "string",
+                                        "example": "123 Main St, Colombo"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Accommodation created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Accommodation"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - User not authorized to create accommodation for this ITS ID"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/accommodations/{id}": {
+            "get": {
+                "tags": [
+                    "Accommodations"
+                ],
+                "summary": "Get accommodation information",
+                "description": "Returns accommodation data by ID.",
+                "operationId": "getAccommodationById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of accommodation to return",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Accommodation"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - User not authorized to view this accommodation"
+                    },
+                    "404": {
+                        "description": "Resource Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Accommodations"
+                ],
+                "summary": "Update existing accommodation record",
+                "description": "Updates an existing accommodation record. 'its_id' is expected to be encrypted if provided.",
+                "operationId": "updateAccommodation",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of accommodation to update",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Accommodation object that needs to be updated",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "miqaat_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "its_id": {
+                                        "description": "Encrypted ITS ID",
+                                        "type": "string",
+                                        "example": "encrypted_its_string"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "example": "Apartment"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Serviced Apartment Colombo"
+                                    },
+                                    "address": {
+                                        "type": "string",
+                                        "example": "456 Galle Rd, Colombo"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Accommodation updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Accommodation"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - User not authorized to update this accommodation or assign to the target ITS ID"
+                    },
+                    "404": {
+                        "description": "Resource Not Found"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Accommodations"
+                ],
+                "summary": "Delete accommodation record",
+                "description": "Deletes an accommodation record by ID.",
+                "operationId": "deleteAccommodation",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of accommodation to delete",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Accommodation deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Accommodation deleted successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - User not authorized to delete this accommodation"
+                    },
+                    "404": {
+                        "description": "Resource Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/auth/login": {
             "post": {
                 "tags": [
@@ -746,6 +1066,15 @@
                         "schema": {
                             "type": "integer"
                         }
+                    },
+                    {
+                        "name": "vaaz_center_id",
+                        "in": "query",
+                        "description": "Optional ID of the Vaaz Center to filter summary for",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
                     }
                 ],
                 "responses": {
@@ -853,6 +1182,19 @@
                                     "event_id": [
                                         "The event id field is required."
                                     ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "The specified Vaaz Center was not found for the given event.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "The specified Vaaz Center was not found for the given event."
                                 }
                             }
                         }
@@ -1321,6 +1663,287 @@
                 ]
             }
         },
+        "/api/pass-preferences/vaaz-center": {
+            "put": {
+                "tags": [
+                    "Pass Preferences"
+                ],
+                "summary": "Update the Vaaz Center for a specific pass preference",
+                "description": "Updates the Vaaz Center for a pass preference identified by ITS ID and Event ID. If the preference had a block assigned, and that block does not belong to the new Vaaz Center, the block assignment will be removed (set to null).",
+                "operationId": "updatePassPreferenceVaazCenter",
+                "requestBody": {
+                    "description": "ITS ID, Event ID, and new Vaaz Center ID",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "its_id",
+                                    "event_id",
+                                    "vaaz_center_id"
+                                ],
+                                "properties": {
+                                    "its_id": {
+                                        "description": "Encrypted ITS ID of the mumineen (decrypted by middleware)",
+                                        "type": "string"
+                                    },
+                                    "event_id": {
+                                        "description": "ID of the event",
+                                        "type": "integer"
+                                    },
+                                    "vaaz_center_id": {
+                                        "description": "ID of the new Vaaz center",
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Vaaz Center updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PassPreference"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - User not authorized to update this preference"
+                    },
+                    "404": {
+                        "description": "Pass Preference or Vaaz Center not found"
+                    },
+                    "422": {
+                        "description": "Validation error or business logic error (e.g. Vaaz center not for this event, capacity full)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Pass Preferences"
+                ],
+                "summary": "Create a new pass preference with a specific Vaaz Center",
+                "description": "Creates a new pass preference record identified by ITS ID and Event ID, assigning a Vaaz Center. ITS ID must be unique for the given Event ID.",
+                "operationId": "storePassPreferenceVaazCenter",
+                "requestBody": {
+                    "description": "ITS ID, Event ID, and Vaaz Center ID for the new preference",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "its_id",
+                                    "event_id",
+                                    "vaaz_center_id"
+                                ],
+                                "properties": {
+                                    "its_id": {
+                                        "description": "Encrypted ITS ID of the mumineen (decrypted by middleware)",
+                                        "type": "string"
+                                    },
+                                    "event_id": {
+                                        "description": "ID of the event",
+                                        "type": "integer"
+                                    },
+                                    "vaaz_center_id": {
+                                        "description": "ID of the Vaaz center",
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Pass preference created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PassPreference"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - User not authorized"
+                    },
+                    "404": {
+                        "description": "Vaaz Center not found"
+                    },
+                    "422": {
+                        "description": "Validation error (e.g., already exists, Vaaz center not for this event, capacity full)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/pass-preferences/pass-type": {
+            "put": {
+                "tags": [
+                    "Pass Preferences"
+                ],
+                "summary": "Update the Pass Type for a specific pass preference",
+                "description": "Updates the Pass Type for a pass preference identified by ITS ID and Event ID.",
+                "operationId": "updatePassPreferencePassType",
+                "requestBody": {
+                    "description": "ITS ID, Event ID, and new Pass Type",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "its_id",
+                                    "event_id",
+                                    "pass_type"
+                                ],
+                                "properties": {
+                                    "its_id": {
+                                        "description": "Encrypted ITS ID of the mumineen (decrypted by middleware)",
+                                        "type": "string"
+                                    },
+                                    "event_id": {
+                                        "description": "ID of the event",
+                                        "type": "integer"
+                                    },
+                                    "pass_type": {
+                                        "description": "New type of pass",
+                                        "type": "string",
+                                        "enum": [
+                                            "RAHAT",
+                                            "CHAIR",
+                                            "GENERAL",
+                                            "MUM_WITH_KIDS"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Pass Type updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PassPreference"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - User not authorized"
+                    },
+                    "404": {
+                        "description": "Pass Preference not found"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Pass Preferences"
+                ],
+                "summary": "Create a new pass preference with a specific Pass Type",
+                "description": "Creates a new pass preference record identified by ITS ID and Event ID, assigning a Pass Type. ITS ID must be unique for the given Event ID.",
+                "operationId": "storePassPreferencePassType",
+                "requestBody": {
+                    "description": "ITS ID, Event ID, and Pass Type for the new preference",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "its_id",
+                                    "event_id",
+                                    "pass_type"
+                                ],
+                                "properties": {
+                                    "its_id": {
+                                        "description": "Encrypted ITS ID of the mumineen (decrypted by middleware)",
+                                        "type": "string"
+                                    },
+                                    "event_id": {
+                                        "description": "ID of the event",
+                                        "type": "integer"
+                                    },
+                                    "pass_type": {
+                                        "description": "Type of pass",
+                                        "type": "string",
+                                        "enum": [
+                                            "RAHAT",
+                                            "CHAIR",
+                                            "GENERAL",
+                                            "MUM_WITH_KIDS"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Pass preference created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PassPreference"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - User not authorized"
+                    },
+                    "422": {
+                        "description": "Validation error (e.g., already exists)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/pass-types": {
             "get": {
                 "tags": [
@@ -1337,24 +1960,75 @@
                                 "schema": {
                                     "type": "array",
                                     "items": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "example": "RAHAT"
                                     }
-                                },
-                                "example": [
-                                    "RAHAT",
-                                    "CHAIR",
-                                    "GENERAL",
-                                    "MUM_WITH_KIDS"
-                                ]
+                                }
                             }
                         }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         }
     },
     "components": {
         "schemas": {
+            "Accommodation": {
+                "required": [
+                    "miqaat_id",
+                    "its_id",
+                    "type",
+                    "name",
+                    "address"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true,
+                        "example": 1
+                    },
+                    "miqaat_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "its_id": {
+                        "description": "Decrypted ITS ID",
+                        "type": "integer",
+                        "example": 12345678
+                    },
+                    "type": {
+                        "type": "string",
+                        "example": "Hotel"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Grand Hyatt"
+                    },
+                    "address": {
+                        "type": "string",
+                        "example": "123 Main St, Colombo"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "type": "object"
+            },
             "User": {
                 "title": "User",
                 "description": "User model",
@@ -1390,6 +2064,220 @@
                         "type": "string",
                         "format": "date-time",
                         "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "Block": {
+                "title": "Block",
+                "description": "Block model schema for seating arrangements within a Vaaz Center",
+                "properties": {
+                    "id": {
+                        "description": "Primary key ID",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "vaaz_center_id": {
+                        "description": "ID of the Vaaz Center this block belongs to",
+                        "type": "integer"
+                    },
+                    "type": {
+                        "description": "Type or name of the block (e.g., 'Section A', 'Balcony')",
+                        "type": "string"
+                    },
+                    "capacity": {
+                        "description": "Capacity of the block",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "min_age": {
+                        "description": "Minimum age for this block, if applicable",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "max_age": {
+                        "description": "Maximum age for this block, if applicable",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "gender": {
+                        "description": "Gender restriction for this block, if applicable",
+                        "type": "string",
+                        "enum": [
+                            "Male",
+                            "Female",
+                            "Any"
+                        ],
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "description": "Timestamp of creation",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "description": "Timestamp of last update",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "vaazCenter": {
+                        "$ref": "#/components/schemas/VaazCenter"
+                    }
+                },
+                "type": "object"
+            },
+            "Event": {
+                "title": "Event",
+                "description": "Event model schema",
+                "properties": {
+                    "id": {
+                        "description": "Primary key ID",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "miqaat_id": {
+                        "description": "ID of the Miqaat this event belongs to",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "description": "Name of the event (e.g., 'Ashara Mubaraka 1445H - Colombo')",
+                        "type": "string"
+                    },
+                    "status": {
+                        "description": "Status of the event (e.g., 'active', 'upcoming', 'past')",
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "description": "Timestamp of creation",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "description": "Timestamp of last update",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "miqaat": {
+                        "$ref": "#/components/schemas/Miqaat"
+                    },
+                    "vaazCenters": {
+                        "description": "List of Vaaz Centers for this event",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/VaazCenter"
+                        },
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "Miqaat": {
+                "title": "Miqaat",
+                "description": "Miqaat model schema (e.g., a religious occasion or event series)",
+                "properties": {
+                    "id": {
+                        "description": "Primary key ID",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "name": {
+                        "description": "Name of the Miqaat (e.g., 'Ashara Mubaraka 1445H')",
+                        "type": "string"
+                    },
+                    "status": {
+                        "description": "Status of the Miqaat (e.g., 'active', 'upcoming', 'past')",
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "description": "Timestamp of creation",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "description": "Timestamp of last update",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "events": {
+                        "description": "List of events associated with this Miqaat",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Event"
+                        },
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "PassPreference": {
+                "title": "Pass Preference",
+                "description": "Pass Preference model schema",
+                "properties": {
+                    "id": {
+                        "description": "Primary key ID",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "its_id": {
+                        "description": "ITS ID of the mumineen",
+                        "type": "integer"
+                    },
+                    "event_id": {
+                        "description": "ID of the associated event",
+                        "type": "integer"
+                    },
+                    "pass_type": {
+                        "description": "Type of pass allocated",
+                        "type": "string",
+                        "enum": [
+                            "RAHAT",
+                            "CHAIR",
+                            "GENERAL",
+                            "MUM_WITH_KIDS"
+                        ]
+                    },
+                    "block_id": {
+                        "description": "ID of the assigned block, if any",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "vaaz_center_id": {
+                        "description": "ID of the assigned Vaaz center, if any",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "description": "Timestamp of creation",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "description": "Timestamp of last update",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "block": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/Block"
+                            }
+                        ],
+                        "nullable": true,
+                        "description": "Associated Block model",
+                        "type": "object"
+                    },
+                    "vaazCenter": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/VaazCenter"
+                            }
+                        ],
+                        "nullable": true,
+                        "description": "Associated VaazCenter model",
+                        "type": "object"
+                    },
+                    "event": {
+                        "$ref": "#/components/schemas/Event"
                     }
                 },
                 "type": "object"
@@ -1455,6 +2343,64 @@
                     }
                 },
                 "type": "object"
+            },
+            "VaazCenter": {
+                "title": "Vaaz Center",
+                "description": "Vaaz Center model schema",
+                "properties": {
+                    "id": {
+                        "description": "Primary key ID",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "name": {
+                        "description": "Name of the Vaaz Center",
+                        "type": "string"
+                    },
+                    "event_id": {
+                        "description": "ID of the Event this center belongs to",
+                        "type": "integer"
+                    },
+                    "est_capacity": {
+                        "description": "Estimated capacity of the center",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "lat": {
+                        "description": "Latitude of the center",
+                        "type": "number",
+                        "format": "float",
+                        "nullable": true
+                    },
+                    "long": {
+                        "description": "Longitude of the center",
+                        "type": "number",
+                        "format": "float",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "description": "Timestamp of creation",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "description": "Timestamp of last update",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "event": {
+                        "$ref": "#/components/schemas/Event"
+                    },
+                    "blocks": {
+                        "description": "List of blocks within this center",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Block"
+                        },
+                        "nullable": true
+                    }
+                },
+                "type": "object"
             }
         },
         "securitySchemes": {
@@ -1474,6 +2420,10 @@
         {
             "name": "Pass Preferences",
             "description": "API Endpoints for managing Pass Preferences"
+        },
+        {
+            "name": "Accommodations",
+            "description": "Accommodations"
         },
         {
             "name": "Mumineen",

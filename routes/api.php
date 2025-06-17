@@ -9,6 +9,7 @@ use App\Http\Controllers\API\PassPreferenceController;
 use App\Http\Controllers\API\EventController;
 use App\Http\Controllers\API\MiqaatController;
 use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\API\AccommodationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -52,7 +53,11 @@ Route::prefix('pass-preferences')->group(function () {
     Route::get('/', [PassPreferenceController::class, 'indexOrShow']);
     Route::post('/', [PassPreferenceController::class, 'store']);
     Route::put('/', [PassPreferenceController::class, 'update']);
-    Route::delete('/', [PassPreferenceController::class, 'destroy']);
+    Route::put('vaaz-center', [PassPreferenceController::class, 'updateVaazCenter']);
+    Route::post('vaaz-center', [PassPreferenceController::class, 'storeVaazCenterPreference']); // New POST route
+    Route::put('pass-type', [PassPreferenceController::class, 'updatePassType']);
+    Route::post('pass-type', [PassPreferenceController::class, 'storePassTypePreference']); // New POST route
+    Route::delete('/{id}', [PassPreferenceController::class, 'destroy']); 
     Route::get('/summary', [PassPreferenceController::class, 'summary']);
 });
 
@@ -80,4 +85,6 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::delete('/', [BlockController::class, 'destroy']);
     });
 
+    // Accommodation API Routes
+    Route::apiResource('accommodations', AccommodationController::class);
 });
