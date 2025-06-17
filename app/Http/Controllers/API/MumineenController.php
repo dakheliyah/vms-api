@@ -18,7 +18,7 @@ class MumineenController extends Controller
      *      operationId="getMumineenOrList",
      *      tags={"Mumineen"},
      *      summary="Get all Mumineen records or a specific one",
-     *      description="Returns all Mumineen records if no ITS ID is provided. If an encrypted ITS ID is provided in the query, it returns the specific record. Requires authentication.",
+     *      description="If an encrypted ITS ID is provided in the query, it returns the specific Mumineen record. If no ITS ID is provided, an empty response is returned. Requires authentication.",
      *      security={{"bearerAuth":{}}},
      *      @OA\Parameter(
      *          name="its_id",
@@ -53,12 +53,12 @@ class MumineenController extends Controller
         $id = $request->input('its_id');
         
         if (empty($id)) {
-            // If no its_id provided, return all records (like the original index method)
-            $mumineen = Mumineen::all();
+            // If no its_id provided, return an empty successful response.
+            // A mumin can only see their family info; an ITS ID is required to specify whose info.
             return response()->json([
                 'success' => true,
-                'data' => $mumineen,
-                'message' => 'Mumineen records retrieved successfully'
+                'data' => [],
+                'message' => 'Please provide an ITS ID to retrieve specific Mumineen information.'
             ]);
         } else {
             // If its_id is provided, return specific record (like the original show method)
