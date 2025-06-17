@@ -20,7 +20,7 @@ class DecryptItsIdMiddleware
             $encryptedId = $request->header('Token');
 
             if ($encryptedId) {
-                $decryptedId = $this->decrypt($encryptedId);
+                $decryptedId = $this->decrypt(urldecode($encryptedId));
 
                 // If decryption fails, return an error response.
                 if ($decryptedId === null) {
