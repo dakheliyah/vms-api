@@ -57,7 +57,7 @@ Route::prefix('pass-preferences')->group(function () {
     Route::post('vaaz-center', [PassPreferenceController::class, 'storeVaazCenterPreference']); // New POST route
     Route::put('pass-type', [PassPreferenceController::class, 'updatePassType']);
     Route::post('pass-type', [PassPreferenceController::class, 'storePassTypePreference']); // New POST route
-    Route::delete('/{id}', [PassPreferenceController::class, 'destroy']); 
+    Route::delete('/{id}', [PassPreferenceController::class, 'destroy']);
     Route::get('/summary', [PassPreferenceController::class, 'summary']);
 });
 
