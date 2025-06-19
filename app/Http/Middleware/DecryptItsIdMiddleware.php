@@ -79,9 +79,9 @@ class DecryptItsIdMiddleware
         $decrypted = openssl_decrypt($cipherText, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv);
         if ($decrypted === false) {
             error_log('[ITS OneLogin] Decryption failed: ' . openssl_error_string());
-            return null;
             error_log($decrypted);
             error_log($encrypted);
+            return null;
         }
         
         if ($json_decode && !empty($decrypted) && ($decrypted[0] === '{' || $decrypted[0] === '[')) {
