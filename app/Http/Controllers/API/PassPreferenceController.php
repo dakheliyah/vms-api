@@ -156,6 +156,92 @@ class PassPreferenceController extends Controller
 
     /**
      * @OA\Get(
+     *      path="/api/pass-preferences/vaaz-center-summary",
+     *      operationId="getVaazCenterPassPreferenceSummary",
+     *      tags={"Pass Preferences"},
+     *      summary="Get Vaaz Center pass availability summary for an event",
+     *      description="Returns a summary of pass availability for Vaaz centers, for a specific event. Does not include block details.",
+     *      security={{"bearerAuth":{}}},
+     *      @OA\Parameter(
+     *          name="event_id",
+     *          in="query",
+     *          description="ID of the event to get summary for",
+     *          required=true,
+     *          @OA\Schema(type="integer")
+     *      ),
+     *      @OA\Parameter(
+     *          name="vaaz_center_id",
+     *          in="query",
+     *          description="Optional ID of the Vaaz Center to filter summary for",
+     *          required=false,
+     *          @OA\Schema(type="integer")
+     *      ),
+     *      @OA\Response(
+     *          response=200,
+     *          description="Successful operation",
+     *          @OA\JsonContent(
+     *              type="array",
+     *              @OA\Items(
+     *                  type="object",
+     *                  @OA\Property(property="id", type="integer", description="Vaaz Center ID"),
+     *                  @OA\Property(property="name", type="string", description="Vaaz Center Name"),
+     *                  @OA\Property(property="vaaz_center_capacity", type="integer", description="Capacity of the Vaaz Center"),
+     *                  @OA\Property(property="vaaz_center_issued_passes", type="integer", description="Number of passes issued for the Vaaz Center"),
+     *                  @OA\Property(property="vaaz_center_availability", description="Availability in Vaaz Center (number or 'unlimited')")
+     *              )
+     *          )
+     *      ),
+     *      @OA\Response(response=401, description="Unauthenticated"),
+     *      @OA\Response(response=422, description="Validation error"),
+     *      @OA\Response(response=404, description="The specified Vaaz Center was not found for the given event.")
+     * )
+     */
+    public function vaazCenterSummary(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'event_id' => 'required|integer|exists:events,id',
+            'vaaz_center_id' => 'nullable|integer|exists:vaaz_centers,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
+
+        $eventId = $request->input('event_id');
+        $vaazCenterId = $request->input('vaaz_center_id');
+
+        $vaazCentersQuery = VaazCenter::where('event_id', $eventId);
+
+        if ($vaazCenterId) {
+            $vaazCentersQuery->where('id', $vaazCenterId);
+        }
+
+        $vaazCenters = $vaazCentersQuery->withCount('passPreferences') // Count passes directly associated with the VaazCenter
+            ->get();
+
+        if ($vaazCenterId && $vaazCenters->isEmpty()) {
+            return response()->json(['message' => 'The specified Vaaz Center was not found for the given event.'], 404);
+        }
+
+        $summary = $vaazCenters->map(function ($vaazCenter) {
+            $vaazCenterIssuedPasses = $vaazCenter->pass_preferences_count ?? 0;
+            $vaazCenterCapacity = $vaazCenter->est_capacity ?? 0;
+            $vaazCenterAvailability = ($vaazCenterCapacity > 0) ? ($vaazCenterCapacity - $vaazCenterIssuedPasses) : 'unlimited';
+
+            return [
+                'id' => $vaazCenter->id,
+                'name' => $vaazCenter->name,
+                'vaaz_center_capacity' => $vaazCenterCapacity,
+                'vaaz_center_issued_passes' => $vaazCenterIssuedPasses,
+                'vaaz_center_availability' => $vaazCenterAvailability,
+            ];
+        });
+
+        return response()->json($summary);
+    }
+
+    /**
+     * @OA\Get(
      *      path="/api/pass-preferences",
      *      operationId="getPassPreferences",
      *      tags={"Pass Preferences"},

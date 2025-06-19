@@ -59,6 +59,7 @@ Route::prefix('pass-preferences')->group(function () {
     Route::post('pass-type', [PassPreferenceController::class, 'storePassTypePreference']); // New POST route
     Route::delete('/{id}', [PassPreferenceController::class, 'destroy']);
     Route::get('/summary', [PassPreferenceController::class, 'summary']);
+    Route::get('/vaaz-center-summary', [PassPreferenceController::class, 'vaazCenterSummary']); // New route for Vaaz Center only summary
 });
 
 // Protected API Routes
