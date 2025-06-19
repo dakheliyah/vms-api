@@ -57,7 +57,7 @@ Route::prefix('pass-preferences')->middleware('decrypt.its_id')->group(function 
     Route::post('vaaz-center', [PassPreferenceController::class, 'storeVaazCenterPreference']);
     Route::put('pass-type', [PassPreferenceController::class, 'updatePassType']);
     Route::post('pass-type', [PassPreferenceController::class, 'storePassTypePreference']);
-    Route::delete('/{id}', [PassPreferenceController::class, 'destroy']);
+    Route::delete('/', [PassPreferenceController::class, 'destroy']);
     Route::get('/summary', [PassPreferenceController::class, 'summary']);
     Route::get('/vaaz-center-summary', [PassPreferenceController::class, 'vaazCenterSummary']);
 });
