@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Enums\PassPreferenceErrorCode;
 use App\Models\PassPreference;
 use App\Models\VaazCenter;
 use App\Models\Block;
@@ -688,10 +689,14 @@ class PassPreferenceController extends Controller
      */
     public function updateVaazCenter(Request $request): JsonResponse
     {
-        $preferencesData = $request->all();
+        $preferencesData = json_decode($request->getContent(), true);
 
-        if (!is_array($preferencesData) || empty($preferencesData) || !isset($preferencesData[0])) {
-            return response()->json(['message' => 'Request body must be a non-empty array of preferences.'], 400);
+        if (json_last_error() !== JSON_ERROR_NONE || !is_array($preferencesData) || empty($preferencesData) || !isset($preferencesData[0])) {
+            return response()->json([
+                'error_code' => PassPreferenceErrorCode::INVALID_REQUEST_BODY->value,
+                'message' => 'Request body must be a valid JSON array of preferences.',
+                'details' => json_last_error_msg() !== 'No error' ? ['json_error' => json_last_error_msg()] : null
+            ], 400);
         }
 
         $validator = Validator::make($preferencesData, [
@@ -701,14 +706,23 @@ class PassPreferenceController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return response()->json([
+                'error_code' => PassPreferenceErrorCode::VALIDATION_FAILED->value,
+                'message' => 'The given data was invalid.',
+                'details' => $validator->errors()->toArray()
+            ], 422);
         }
 
         $validatedPreferences = $validator->validated();
 
+        // Authorization check for all preferences upfront
         foreach ($validatedPreferences as $preferenceData) {
             if (!$this->isFamilyMember($request, $preferenceData['its_id'])) {
-                return response()->json(['message' => 'Authorization failed for one or more ITS numbers.'], 403);
+                return response()->json([
+                    'error_code' => PassPreferenceErrorCode::AUTHORIZATION_FAILED->value,
+                    'message' => 'Authorization failed for ITS ' . $preferenceData['its_id'] . '.',
+                    'details' => ['its_id' => $preferenceData['its_id']]
+                ], 403);
             }
         }
 
@@ -725,28 +739,32 @@ class PassPreferenceController extends Controller
                                                     ->first();
 
                     if (!$passPreference) {
-                        throw new \Exception("Pass Preference not found for ITS {$itsId} and Event ID {$eventId}.", 404);
+                        // Use a distinct message format for easy parsing in catch block
+                        throw new \Exception("PASS_PREFERENCE_NOT_FOUND_FOR_ITS_{$itsId}_EVENT_{$eventId}", 404);
                     }
 
                     $newVaazCenter = VaazCenter::find($newVaazCenterId);
                     if (!$newVaazCenter) {
-                        throw new \Exception("Target Vaaz Center with ID {$newVaazCenterId} not found.", 404);
+                        throw new \Exception("VAAZ_CENTER_NOT_FOUND_{$newVaazCenterId}", 404);
                     }
 
                     if ($newVaazCenter->event_id != $eventId) {
-                        throw new \Exception("The selected Vaaz Center for ITS {$itsId} does not belong to the specified event.", 422);
+                        throw new \Exception("VAAZ_CENTER_EVENT_MISMATCH_ITS_{$itsId}", 422);
                     }
 
-                    if ($newVaazCenter->est_capacity > 0) {
+                    // Only check capacity if moving to a *different* Vaaz Center and it has a defined capacity
+                    if ($newVaazCenter->est_capacity > 0 && $passPreference->vaaz_center_id != $newVaazCenterId) {
                         $currentPassesInNewCenter = PassPreference::where('vaaz_center_id', $newVaazCenterId)
-                                                            ->where('id', '!=', $passPreference->id)
-                                                            ->count();
+                                                              ->where('event_id', $eventId) // Count for the same event
+                                                              ->count();
                         if ($currentPassesInNewCenter >= $newVaazCenter->est_capacity) {
-                            throw new \Exception("The selected new Vaaz Center for ITS {$itsId} is full.", 422);
+                            throw new \Exception("VAAZ_CENTER_FULL_ITS_{$itsId}", 422);
                         }
                     }
 
-                    if ($passPreference->block_id) {
+                    // If moving to a new Vaaz center, and previously assigned to a block,
+                    // nullify block_id if the block belongs to a different Vaaz center than the new one.
+                    if ($passPreference->block_id && $passPreference->vaaz_center_id != $newVaazCenterId) {
                         $block = Block::find($passPreference->block_id);
                         if ($block && $block->vaaz_center_id != $newVaazCenterId) {
                             $passPreference->block_id = null;
@@ -758,8 +776,38 @@ class PassPreferenceController extends Controller
                 }
             });
         } catch (\Exception $e) {
-            $statusCode = in_array($e->getCode(), [403, 404]) ? $e->getCode() : 422;
-            return response()->json(['message' => $e->getMessage()], $statusCode);
+            $message = $e->getMessage();
+            $errorCode = PassPreferenceErrorCode::UNKNOWN_ERROR;
+            $details = ['original_message' => $message];
+            $userMessage = 'An unexpected error occurred while updating Vaaz Center preferences.';
+            // Prioritize exception code for 404, otherwise default to 422 for business logic errors
+            $statusCode = $e->getCode() == 404 ? 404 : 422;
+
+            if (preg_match('/PASS_PREFERENCE_NOT_FOUND_FOR_ITS_(\d+)_EVENT_(\d+)/', $message, $matches)) {
+                $errorCode = PassPreferenceErrorCode::RESOURCE_NOT_FOUND;
+                $userMessage = "Pass Preference not found for ITS {$matches[1]} and Event ID {$matches[2]}.";
+                $details = ['its_id' => $matches[1], 'event_id' => $matches[2], 'resource_type' => 'PassPreference'];
+                $statusCode = 404;
+            } elseif (preg_match('/VAAZ_CENTER_NOT_FOUND_(\d+)/', $message, $matches)) {
+                $errorCode = PassPreferenceErrorCode::RESOURCE_NOT_FOUND;
+                $userMessage = "Target Vaaz Center with ID {$matches[1]} not found.";
+                $details = ['vaaz_center_id' => $matches[1], 'resource_type' => 'VaazCenter'];
+                $statusCode = 404;
+            } elseif (preg_match('/VAAZ_CENTER_EVENT_MISMATCH_ITS_(\d+)/', $message, $matches)) {
+                $errorCode = PassPreferenceErrorCode::VAAZ_CENTER_EVENT_MISMATCH;
+                $userMessage = "The selected Vaaz Center for ITS {$matches[1]} does not belong to the specified event.";
+                $details = ['its_id' => $matches[1]];
+            } elseif (preg_match('/VAAZ_CENTER_FULL_ITS_(\d+)/', $message, $matches)) {
+                $errorCode = PassPreferenceErrorCode::VAAZ_CENTER_FULL;
+                $userMessage = "The selected new Vaaz Center for ITS {$matches[1]} is full.";
+                $details = ['its_id' => $matches[1]];
+            }
+
+            return response()->json([
+                'error_code' => $errorCode->value,
+                'message' => $userMessage,
+                'details' => $details
+            ], $statusCode);
         }
 
         return response()->json(['message' => 'Pass preferences updated successfully.']);
