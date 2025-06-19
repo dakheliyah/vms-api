@@ -287,7 +287,7 @@ class PassPreferenceController extends Controller
             $targetItsId = $request->input('its_id');
 
             // Authorization Check: Ensure the requested ITS ID is in the user's family.
-            if (!$this->isFamilyMember($targetItsId)) {
+            if (!$this->isFamilyMember($request, $targetItsId)) {
                 return response()->json(['message' => 'You are not authorized to view this pass preference.'], 403);
             }
 
@@ -377,7 +377,7 @@ class PassPreferenceController extends Controller
         $createdPreferences = [];
 
         foreach ($validatedPreferences as $preferenceData) {
-            if (!$this->isFamilyMember($preferenceData['its_id'])) {
+            if (!$this->isFamilyMember($request, $preferenceData['its_id'])) {
                 return response()->json(['message' => 'Authorization failed for one or more ITS numbers.'], 403);
             }
         }
@@ -509,7 +509,7 @@ class PassPreferenceController extends Controller
         $validatedPreferences = $validator->validated();
 
         foreach ($validatedPreferences as $preferenceData) {
-            if (!$this->isFamilyMember($preferenceData['its_id'])) {
+            if (!$this->isFamilyMember($request, $preferenceData['its_id'])) {
                 return response()->json(['message' => 'Authorization failed for one or more ITS numbers.'], 403);
             }
         }
@@ -627,7 +627,7 @@ class PassPreferenceController extends Controller
         $targetItsId = $request->input('its_id');
 
         // Authorization Check
-        if (!$this->isFamilyMember($targetItsId)) {
+        if (!$this->isFamilyMember($request, $targetItsId)) {
             return response()->json(['message' => 'You are not authorized to delete this pass preference.'], 403);
         }
 
@@ -689,7 +689,7 @@ class PassPreferenceController extends Controller
         $eventId = $validatedData['event_id'];
         $newVaazCenterId = $validatedData['vaaz_center_id'];
 
-        if (!$this->isFamilyMember($itsId)) {
+        if (!$this->isFamilyMember($request, $itsId)) {
             return response()->json(['message' => 'You are not authorized to update this pass preference.'], 403);
         }
 
@@ -779,7 +779,7 @@ class PassPreferenceController extends Controller
         $itsId = $validatedData['its_id'];
         $eventId = $validatedData['event_id'];
 
-        if (!$this->isFamilyMember($itsId)) {
+        if (!$this->isFamilyMember($request, $itsId)) {
             return response()->json(['message' => 'You are not authorized to update this pass preference.'], 403);
         }
 
@@ -851,7 +851,8 @@ class PassPreferenceController extends Controller
         $eventId = $validatedData['event_id'];
         $vaazCenterId = $validatedData['vaaz_center_id'];
 
-        if (!$this->isFamilyMember($itsId)) {
+        if (!$this->isFamilyMember($request, $itsId)) {
+            error_log('[ITS OneLogin] ' . $itsId . ' is not authorized to create this pass preference.');
             return response()->json(['message' => 'You are not authorized to create this pass preference.'], 403);
         }
 
@@ -933,7 +934,7 @@ class PassPreferenceController extends Controller
         $validatedData = $validator->validated();
         $itsId = $validatedData['its_id'];
 
-        if (!$this->isFamilyMember($itsId)) {
+        if (!$this->isFamilyMember($request, $itsId)) {
             return response()->json(['message' => 'You are not authorized to create this pass preference.'], 403);
         }
 
@@ -978,20 +979,21 @@ class PassPreferenceController extends Controller
      * @param int $targetItsId The ITS ID to check.
      * @return bool True if the target is in the same family, false otherwise.
      */
-    private function isFamilyMember($targetItsId): bool
+    private function isFamilyMember($request, $targetItsId): bool
     {
-        $currentUser = auth()->user();
+        $its_id = $request->input('its_id');
 
         // If there's no authenticated user or they don't have an ITS ID, deny access.
-        if (!$currentUser || !isset($currentUser->its_id)) {
+        if (!$its_id || !isset($its_id)) {
+            error_log('No authenticated user or ITS ID not found.');
             return false;
         }
 
-        $currentUserItsId = $currentUser->its_id;
-
         // Get HOF ID for both the current user and the target user.
-        $currentUserRecord = Mumineen::where('id', $currentUserItsId)->first(['hof_id']);
-        $targetUserRecord = Mumineen::where('id', $targetItsId)->first(['hof_id']);
+        $currentUserRecord = Mumineen::where('its_id', $its_id)->first(['hof_id']);
+        $targetUserRecord = Mumineen::where('its_id', $targetItsId)->first(['hof_id']);
+        error_log($currentUserRecord->hof_id);
+        error_log($targetUserRecord->hof_id);
 
         // If either record doesn't exist, or their hof_id is null, they can't be in the same family.
         if (!$currentUserRecord || !$targetUserRecord || is_null($currentUserRecord->hof_id) || is_null($targetUserRecord->hof_id)) {

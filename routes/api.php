@@ -38,7 +38,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 // Mumineen API Routes
-Route::prefix('mumineen')->group(function () {
+Route::prefix('mumineen')->middleware('decrypt.its_id')->group(function () {
     Route::post('/', [MumineenController::class, 'store']);
     
     Route::get('/', [MumineenController::class, 'indexOrShow']); // Using ?its_id=value or no params for index
@@ -48,21 +48,21 @@ Route::prefix('mumineen')->group(function () {
     Route::delete('/{its_id}', [MumineenController::class, 'destroy']);
 });
 
-// Pass Preference API Routes
-Route::prefix('pass-preferences')->group(function () {
+// Protected API Routes
+// Public Pass Preference Routes (No JWT Auth required, but can use Token header)
+Route::prefix('pass-preferences')->middleware('decrypt.its_id')->group(function () {
     Route::get('/', [PassPreferenceController::class, 'indexOrShow']);
     Route::post('/', [PassPreferenceController::class, 'store']);
     Route::put('/', [PassPreferenceController::class, 'update']);
     Route::put('vaaz-center', [PassPreferenceController::class, 'updateVaazCenter']);
-    Route::post('vaaz-center', [PassPreferenceController::class, 'storeVaazCenterPreference']); // New POST route
+    Route::post('vaaz-center', [PassPreferenceController::class, 'storeVaazCenterPreference']);
     Route::put('pass-type', [PassPreferenceController::class, 'updatePassType']);
-    Route::post('pass-type', [PassPreferenceController::class, 'storePassTypePreference']); // New POST route
+    Route::post('pass-type', [PassPreferenceController::class, 'storePassTypePreference']);
     Route::delete('/{id}', [PassPreferenceController::class, 'destroy']);
     Route::get('/summary', [PassPreferenceController::class, 'summary']);
-    Route::get('/vaaz-center-summary', [PassPreferenceController::class, 'vaazCenterSummary']); // New route for Vaaz Center only summary
+    Route::get('/vaaz-center-summary', [PassPreferenceController::class, 'vaazCenterSummary']);
 });
 
-// Protected API Routes
 Route::group(['middleware' => 'auth:api'], function () {
     // Miqaat API Routes
     Route::apiResource('miqaats', MiqaatController::class);
