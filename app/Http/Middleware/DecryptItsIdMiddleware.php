@@ -26,7 +26,11 @@ class DecryptItsIdMiddleware
             return response()->json(['message' => 'Token header cannot be empty.'], 400);
         }
 
-        $decryptedId = $this->decrypt(urldecode($encryptedId));
+        error_log($encryptedId);
+        $decryptedId = $this->decrypt($encryptedId);
+        if($decryptedId === null){
+            $decryptedId = $this->decrypt(urldecode($encryptedId));
+        }
 
         // If decryption fails, return an error response.
         if ($decryptedId === null) {
