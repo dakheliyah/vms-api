@@ -73,4 +73,15 @@ class Mumineen extends Model
     {
         return $this->hasMany(PassPreference::class, 'its_id', 'its_id');
     }
+    
+    /**
+     * Get a single pass preference for the mumineen for a specific event.
+     * This returns a hasOne relationship for cases where we only want one preference per event.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function passPreference()
+    {
+        return $this->hasOne(PassPreference::class, 'its_id', 'its_id');
+    }
 }

@@ -44,7 +44,6 @@ Route::prefix('mumineen')->middleware('decrypt.its_id')->group(function () {
     Route::get('/', [MumineenController::class, 'indexOrShow']); // Using ?its_id=value or no params for index
     Route::get('/family-by-its-id', [MumineenController::class, 'getFamilyByItsId']); // Using ?its_id=value
     
-    Route::put('/{its_id}', [MumineenController::class, 'update']);
     Route::delete('/{its_id}', [MumineenController::class, 'destroy']);
 });
 

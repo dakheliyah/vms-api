@@ -2379,7 +2379,7 @@
                         "example": 20324228,
                         "nullable": true
                     },
-                    "hof_its_id": {
+                    "hof_id": {
                         "description": "8-digit HOF ITS ID",
                         "type": "integer",
                         "format": "int64",

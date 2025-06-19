@@ -50,7 +50,7 @@ class MumineenController extends Controller
     public function indexOrShow(Request $request): JsonResponse
     {
         // Check if its_id parameter is present
-        $id = $request->input('its_id');
+        $id = $request->input('user_decrypted_its_id');
         
         if (empty($id)) {
             // If no its_id provided, return an empty successful response.
@@ -193,7 +193,7 @@ class MumineenController extends Controller
     public function show(Request $request): JsonResponse
     {
         // Get the its_id from query parameters
-        $id = $request->input('its_id');
+        $id = $request->input('user_decrypted_its_id');
         
         if (empty($id)) {
             return response()->json([
@@ -405,6 +405,14 @@ class MumineenController extends Controller
     {
         // Get the its_id from query parameters
         $id = $request->input('user_decrypted_its_id');
+        $eventId = $request->input('event_id');
+        
+        if (!$eventId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'event_id parameter is required'
+            ], 400);
+        }
         
         // Find the member by its_id
         $mumineen = Mumineen::where('its_id', $id)->first();
@@ -429,7 +437,9 @@ class MumineenController extends Controller
         // Find all members who share the same HOF ITS ID
         $familyMembers = Mumineen::where('hof_id', $hofItsId)
             ->orWhere('its_id', $hofItsId) // Include the head of family as well
-            ->with('passPreferences') // Include pass preference information
+            ->with(['passPreference' => function($query) use ($eventId) {
+                $query->where('event_id', $eventId);
+            }])
             ->get();
         
         return response()->json([
