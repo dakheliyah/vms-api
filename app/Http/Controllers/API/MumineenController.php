@@ -439,9 +439,24 @@ class MumineenController extends Controller
             ->orWhere('its_id', $hofItsId) // Include the head of family as well
             ->with(['passPreferences' => function($query) use ($eventId) {
                 $query->where('event_id', $eventId);
-                $query->with('vaazCenter'); // Include the vaaz center information
             }])
             ->get();
+            
+        // Transform the result to include vaaz center name directly
+        $familyMembers->transform(function ($member) {
+            // For each pass preference, fetch and add the vaaz center name
+            if ($member->passPreferences->isNotEmpty()) {
+                $member->passPreferences->transform(function ($preference) {
+                    if ($preference->vaaz_center_id) {
+                        // Fetch the vaaz center name
+                        $vaazCenter = \App\Models\VaazCenter::find($preference->vaaz_center_id);
+                        $preference->vaaz_center_name = $vaazCenter ? $vaazCenter->name : null;
+                    }
+                    return $preference;
+                });
+            }
+            return $member;
+        });
         
         return response()->json([
             'success' => true,
