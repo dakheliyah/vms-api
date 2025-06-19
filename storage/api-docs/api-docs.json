@@ -10,7 +10,7 @@
     },
     "servers": [
         {
-            "url": "http://my-default-host.com",
+            "url": "https://vms-api-main-branch-zuipth.laravel.cloud",
             "description": "API Server"
         }
     ],
