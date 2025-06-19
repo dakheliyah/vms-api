@@ -36,7 +36,6 @@ class DecryptItsIdMiddleware
         // Provide the decrypted ITS ID to the entire request lifecycle.
         // This makes it available via $request->input('its_id') in controllers.
         $request->merge(['user_decrypted_its_id' => $decryptedId]);
-        error_log($decryptedId);
 
         // If a user is authenticated, also attach the ITS ID to the user object for convenience.
         if ($request->user()) {

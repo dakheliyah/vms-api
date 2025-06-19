@@ -633,7 +633,6 @@ class PassPreferenceController extends Controller
 
         $targetItsId = $request->input('its_id');
         $targetEventId = $request->input('event_id');
-        error_log("Target ITS ID: " . $targetItsId . ", Target Event ID: " . $targetEventId);
 
         // Authorization Check
         if (!$this->isFamilyMember($request, $targetItsId)) {
@@ -799,7 +798,7 @@ class PassPreferenceController extends Controller
                 $details = ['its_id' => $matches[1]];
             } elseif (preg_match('/VAAZ_CENTER_FULL_ITS_(\d+)/', $message, $matches)) {
                 $errorCode = PassPreferenceErrorCode::VAAZ_CENTER_FULL;
-                $userMessage = "The selected new Vaaz Center for ITS {$matches[1]} is full.";
+                $userMessage = "The selected Vaaz Center for ITS {$matches[1]} is full.";
                 $details = ['its_id' => $matches[1]];
             }
 
@@ -1124,7 +1123,6 @@ class PassPreferenceController extends Controller
             $familyItsIds = array_merge($familyItsIds, $members);
         }
         // else, it's just the user themselves, already added.
-        error_log(print_r($familyItsIds, true));
         return array_unique($familyItsIds);
     }
 }
