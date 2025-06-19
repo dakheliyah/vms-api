@@ -437,8 +437,9 @@ class MumineenController extends Controller
         // Find all members who share the same HOF ITS ID
         $familyMembers = Mumineen::where('hof_id', $hofItsId)
             ->orWhere('its_id', $hofItsId) // Include the head of family as well
-            ->with(['passPreference' => function($query) use ($eventId) {
+            ->with(['passPreferences' => function($query) use ($eventId) {
                 $query->where('event_id', $eventId);
+                $query->with('vaazCenter'); // Include the vaaz center information
             }])
             ->get();
         
