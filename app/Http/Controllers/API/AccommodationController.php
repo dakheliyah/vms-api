@@ -294,9 +294,9 @@ class AccommodationController extends Controller
 
         $mumineenUser = Mumineen::where('its_id', $loggedInUserItsId)->first();
 
-        if ($mumineenUser && $mumineenUser->hoF_its_id) {
+        if ($mumineenUser && $mumineenUser->hof_id) {
             // Get all family members including HoF
-            $members = Mumineen::where('hoF_its_id', $mumineenUser->hoF_its_id)->pluck('its_id')->toArray();
+            $members = Mumineen::where('hof_id', $mumineenUser->hof_id)->pluck('its_id')->toArray();
             $familyItsIds = array_merge($familyItsIds, $members);
         }
         // else, it's just the user themselves, already added.

@@ -34,7 +34,7 @@ The `mumineens` table has the following structure:
 |-------------|-----------|----------------------------------------------|
 | its_id      | integer   | Primary key, 8-digit unique ID               |
 | eits_id     | integer   | Optional 8-digit ID                          |
-| hof_its_id  | integer   | Head of Family ITS ID (for family grouping)  |
+| hof_id  | integer   | Head of Family ITS ID (for family grouping)  |
 | full_name   | string    | Full name of the person                      |
 | gender      | enum      | Male, Female or Other                        |
 | age         | integer   | Age of the person                            |
@@ -129,7 +129,7 @@ The API implements validation for all inputs:
 
 - `its_id`: Required, 8-digit integer, unique
 - `eits_id`: Optional, 8-digit integer
-- `hof_its_id`: Optional, 8-digit integer
+- `hof_id`: Optional, 8-digit integer
 - `full_name`: Required, string, max 255 characters
 - `gender`: Required, enum (male, female, other)
 - `age`: Optional, integer

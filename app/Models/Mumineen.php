@@ -63,4 +63,14 @@ class Mumineen extends Model
         'hof_id' => 'integer',
         'age' => 'integer',
     ];
+    
+    /**
+     * Get the pass preferences for the mumineen.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function passPreferences()
+    {
+        return $this->hasMany(PassPreference::class, 'its_id', 'its_id');
+    }
 }

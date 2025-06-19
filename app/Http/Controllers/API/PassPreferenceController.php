@@ -283,25 +283,24 @@ class PassPreferenceController extends Controller
      */
     public function indexOrShow(Request $request)
     {
-        if ($request->has('its_id')) {
-            $targetItsId = $request->input('its_id');
+        $targetItsId = $request->input('user_decrypted_its_id');
 
-            // Authorization Check: Ensure the requested ITS ID is in the user's family.
-            if (!$this->isFamilyMember($request, $targetItsId)) {
-                return response()->json(['message' => 'You are not authorized to view this pass preference.'], 403);
-            }
-
-            $passPreference = PassPreference::where('its_id', $targetItsId)->with(['block', 'vaazCenter', 'event'])->first();
-            if (!$passPreference) {
-                return response()->json(['message' => 'Pass Preference not found for this ITS number'], 404);
-            }
-            return response()->json($passPreference);
+        // Get all family ITS IDs
+        $familyItsIds = $this->getFamilyItsIds($targetItsId);
+        if (empty($familyItsIds)) {
+            return response()->json(['message' => 'Could not determine family members.'], 404);
         }
 
-        // Listing all preferences is a potential data leak and should be restricted.
-        // Returning an empty array for non-specific requests.
-        // Implement role-based access control to allow admins to see all.
-        return response()->json([]);
+        // Fetch all pass preferences for the entire family
+        $passPreferences = PassPreference::whereIn('its_id', $familyItsIds)
+            ->with(['block', 'vaazCenter', 'event'])
+            ->get();
+
+        if ($passPreferences->isEmpty()) {
+            return response()->json(['message' => 'No pass preferences found for this family.'], 404);
+        }
+
+        return response()->json($passPreferences);
     }
 
     /**
@@ -981,7 +980,7 @@ class PassPreferenceController extends Controller
      */
     private function isFamilyMember($request, $targetItsId): bool
     {
-        $its_id = $request->input('its_id');
+        $its_id = $request->input('user_decrypted_its_id');
 
         // If there's no authenticated user or they don't have an ITS ID, deny access.
         if (!$its_id || !isset($its_id)) {
@@ -1002,5 +1001,29 @@ class PassPreferenceController extends Controller
 
         // They are in the same family if their HOF ID is the same and not null.
         return $currentUserRecord->hof_id === $targetUserRecord->hof_id;
+    }
+
+    /**
+     * Get the authenticated user's ITS ID and their family members' ITS IDs.
+     * @param \App\Models\User $user The authenticated user.
+     * @return array An array of ITS IDs.
+     */
+    private function getFamilyItsIds($targetItsId)
+    {
+        // Fallback: Query Mumineen table if family_its_ids is not readily available from token/user object
+        // This requires the User model to have an 'its_id' attribute and Mumineen model setup.
+        $loggedInUserItsId = $targetItsId; // Assuming User model has its_id attribute
+        $familyItsIds = [$loggedInUserItsId];
+
+        $mumineenUser = Mumineen::where('its_id', $loggedInUserItsId)->first();
+
+        if ($mumineenUser && $mumineenUser->hof_id) {
+            // Get all family members including HoF
+            $members = Mumineen::where('hof_id', $mumineenUser->hof_id)->pluck('its_id')->toArray();
+            $familyItsIds = array_merge($familyItsIds, $members);
+        }
+        // else, it's just the user themselves, already added.
+        error_log(print_r($familyItsIds, true));
+        return array_unique($familyItsIds);
     }
 }

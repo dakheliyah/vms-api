@@ -15,27 +15,32 @@ class DecryptItsIdMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Check if the 'Token' header with the encrypted ITS ID exists.
-        if ($request->hasHeader('Token')) {
-            $encryptedId = $request->header('Token');
+        // Enforce that the 'Token' header is required for all routes using this middleware.
+        if (!$request->hasHeader('Token')) {
+            return response()->json(['message' => 'Token header is required.'], 400);
+        }
 
-            if ($encryptedId) {
-                $decryptedId = $this->decrypt(urldecode($encryptedId));
+        $encryptedId = $request->header('Token');
 
-                // If decryption fails, return an error response.
-                if ($decryptedId === null) {
-                    return response()->json(['message' => 'The provided Token is invalid or corrupted.'], 422);
-                }
+        if (empty($encryptedId)) {
+            return response()->json(['message' => 'Token header cannot be empty.'], 400);
+        }
 
-                // Merge the decrypted ITS ID into the request payload.
-                $request->merge(['its_id' => $decryptedId]);
+        $decryptedId = $this->decrypt(urldecode($encryptedId));
 
-                // If a user is authenticated, attach the ITS ID to the user object.
-                // This makes it easily accessible in controllers via auth()->user()->its_id
-                if ($request->user()) {
-                    $request->user()->its_id = $decryptedId;
-                }
-            }
+        // If decryption fails, return an error response.
+        if ($decryptedId === null) {
+            return response()->json(['message' => 'The provided Token is invalid or corrupted.'], 422);
+        }
+
+        // Provide the decrypted ITS ID to the entire request lifecycle.
+        // This makes it available via $request->input('its_id') in controllers.
+        $request->merge(['user_decrypted_its_id' => $decryptedId]);
+        error_log($decryptedId);
+
+        // If a user is authenticated, also attach the ITS ID to the user object for convenience.
+        if ($request->user()) {
+            $request->user()->its_id = $decryptedId;
         }
 
         return $next($request);

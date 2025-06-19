@@ -404,14 +404,7 @@ class MumineenController extends Controller
     public function getFamilyByItsId(Request $request): JsonResponse
     {
         // Get the its_id from query parameters
-        $id = $request->input('its_id');
-        
-        if (empty($id)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'its_id parameter is required'
-            ], 400);
-        }
+        $id = $request->input('user_decrypted_its_id');
         
         // Find the member by its_id
         $mumineen = Mumineen::where('its_id', $id)->first();
@@ -436,6 +429,7 @@ class MumineenController extends Controller
         // Find all members who share the same HOF ITS ID
         $familyMembers = Mumineen::where('hof_id', $hofItsId)
             ->orWhere('its_id', $hofItsId) // Include the head of family as well
+            ->with('passPreferences') // Include pass preference information
             ->get();
         
         return response()->json([
