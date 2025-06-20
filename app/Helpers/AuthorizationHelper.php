@@ -21,7 +21,7 @@ class AuthorizationHelper
             "30361286", // ITS53
             "30362306", // Hamza bhai Ajmer
             "30359366", // Huzefa bhai Frutti
-            "20323929" // Ibrahim Bs
+            "20323929", // Ibrahim Bs
 
         ];
 

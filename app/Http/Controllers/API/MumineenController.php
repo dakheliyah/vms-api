@@ -8,6 +8,8 @@ use App\Models\Mumineen;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
+use App\Models\HizbeSaifeeGroup;
+use Illuminate\Support\Facades\DB;
 
 class MumineenController extends Controller
 {
@@ -137,6 +139,7 @@ class MumineenController extends Controller
             'age' => 'nullable|integer',
             'mobile' => 'nullable|string',
             'country' => 'nullable|string',
+            'hizbe_saifee_group_id' => 'nullable|integer|exists:hizbe_saifee_groups,id',
         ]);
 
         if ($validator->fails()) {
@@ -287,6 +290,7 @@ class MumineenController extends Controller
             'age' => 'nullable|integer',
             'mobile' => 'nullable|string',
             'country' => 'nullable|string',
+            'hizbe_saifee_group_id' => 'nullable|integer|exists:hizbe_saifee_groups,id',
         ]);
 
         if ($validator->fails()) {
@@ -590,7 +594,7 @@ class MumineenController extends Controller
      *      security={{"bearerAuth":{}}},
      *      @OA\RequestBody(
      *          required=true,
-     *          description="CSV file to upload. The first row must be a header row with column names matching the `mumineens` table fields (e.g., its_id, hof_id, fullname, etc.).",
+     *          description="CSV file to upload. The first row must be a header row with column names matching the `mumineens` table fields (e.g., its_id, hof_id, fullname, gender, age, jamaat, mobile (optional), country (optional), etc.).",
      *          @OA\MediaType(
      *              mediaType="multipart/form-data",
      *              @OA\Schema(
@@ -804,5 +808,146 @@ class MumineenController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * @OA\Post(
+     *      path="/api/mumineen/auto-assign-groups",
+     *      operationId="autoAssignHizbeSaifeeGroups",
+     *      tags={"Mumineen"},
+     *      summary="Automatically assign Mumineen to Hizbe Saifee groups",
+     *      description="Assigns Mumineen who currently have no Hizbe Saifee group to available groups based on family and group capacity. Requires admin authentication.",
+     *      security={{"bearerAuth":{}}},
+     *      @OA\Response(
+     *          response=200,
+     *          description="Assignment process completed",
+     *          @OA\JsonContent(
+     *              type="object",
+     *              @OA\Property(property="success", type="boolean", example=true),
+     *              @OA\Property(property="message", type="string", example="Hizbe Saifee group assignment process completed."),
+     *              @OA\Property(
+     *                  property="summary",
+     *                  type="object",
+     *                  @OA\Property(property="families_processed", type="integer", example=10),
+     *                  @OA\Property(property="mumineen_assigned", type="integer", example=45),
+     *                  @OA\Property(
+     *                      property="unassigned_families",
+     *                      type="array",
+     *                      @OA\Items(
+     *                          type="object",
+     *                          @OA\Property(property="hof_id", type="string", example="encrypted_string"),
+     *                          @OA\Property(property="size", type="integer", example=5)
+     *                      )
+     *                  )
+     *              )
+     *          )
+     *      ),
+     *      @OA\Response(
+     *          response=403,
+     *          description="Forbidden (Admin access required)"
+     *      ),
+     *      @OA\Response(
+     *          response=500,
+     *          description="An error occurred during the assignment process"
+     *      )
+     * )
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function autoAssignHizbeSaifeeGroups(Request $request): \Illuminate\Http\JsonResponse
+    {
+        if (!AuthorizationHelper::isAdmin($request)) {
+            return response()->json(['success' => false, 'message' => 'Forbidden. Admin access required.'], 403);
+        }
+
+        $families_processed = 0;
+        $mumineen_assigned_total = 0;
+        $unassigned_families_due_to_capacity = [];
+
+        DB::beginTransaction();
+
+        try {
+            // 1. Fetch HizbeSaifeeGroups with current assignments and calculate remaining capacity
+            $hizbeGroups = HizbeSaifeeGroup::withCount('mumineen')->get()->map(function ($group) {
+                $group->remaining_capacity = $group->capacity - $group->mumineen_count;
+                return $group;
+            })->sortByDesc('remaining_capacity')->values(); // Sort by most remaining capacity
+
+            // 2. Fetch unassigned Mumineen, grouped by HOF_ID (families)
+            // We need hof_id and the list of its_ids for each family member
+            $unassignedMumineen = Mumineen::whereNull('hizbe_saifee_group_id')
+                ->select('id', 'its_id', 'hof_id') // Select only necessary fields
+                ->get();
+
+            if ($unassignedMumineen->isEmpty()) {
+                DB::rollBack(); // No need for transaction if no one to assign
+                return response()->json([
+                    'success' => true,
+                    'message' => 'No Mumineen found without an assigned Hizbe Saifee group.',
+                    'summary' => [
+                        'families_processed' => 0,
+                        'mumineen_assigned' => 0,
+                        'unassigned_families' => []
+                    ]
+                ]);
+            }
+
+            $families = $unassignedMumineen->groupBy('hof_id');
+
+            // 3. Iterate through families and assign to groups if capacity allows
+            foreach ($families as $hof_id => $members) {
+                $families_processed++;
+                $family_size = $members->count();
+                $assigned_to_group = false;
+
+                foreach ($hizbeGroups as $group) {
+                    if ($group->remaining_capacity >= $family_size) {
+                        // Assign all members of this family to this group
+                        $member_ids_to_update = $members->pluck('id');
+                        Mumineen::whereIn('id', $member_ids_to_update)->update(['hizbe_saifee_group_id' => $group->id]);
+
+                        // Update group's remaining capacity in our working collection
+                        $group->remaining_capacity -= $family_size;
+                        $mumineen_assigned_total += $family_size;
+                        $assigned_to_group = true;
+
+                        // Re-sort groups by remaining capacity for next family (optional, but can be more optimal)
+                        // $hizbeGroups = $hizbeGroups->sortByDesc('remaining_capacity')->values(); 
+                        break; // Move to the next family
+                    }
+                }
+
+                if (!$assigned_to_group) {
+                    $unassigned_families_due_to_capacity[] = ['hof_id' => $hof_id, 'size' => $family_size];
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Hizbe Saifee group assignment process completed.',
+                'summary' => [
+                    'families_processed' => $families_processed,
+                    'mumineen_assigned' => $mumineen_assigned_total,
+                    'unassigned_families' => $unassigned_families_due_to_capacity
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            // Log the exception $e->getMessage()
+            return response()->json([
+                'success' => false, 
+                'message' => 'An error occurred during the assignment process: ' . $e->getMessage(),
+                'summary' => [
+                    'families_processed' => $families_processed, // Or 0 if preferred on error
+                    'mumineen_assigned' => $mumineen_assigned_total, // Or 0
+                    'unassigned_families' => $unassigned_families_due_to_capacity // Or empty
+                ]
+            ], 500);
+        }
+
     }
 }

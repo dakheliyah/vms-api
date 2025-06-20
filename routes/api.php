@@ -10,6 +10,7 @@ use App\Http\Controllers\API\EventController;
 use App\Http\Controllers\API\MiqaatController;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\AccommodationController;
+use App\Http\Controllers\API\HizbeSaifeeGroupController;
 
 /*
 |--------------------------------------------------------------------------
@@ -44,6 +45,9 @@ Route::prefix('mumineen')->middleware('decrypt.its_id')->group(function () {
     
     // Route to download sample CSV for Mumineen bulk upload
     Route::get('/sample-csv', [MumineenController::class, 'downloadSampleCsv']);
+    // Mumineen Bulk Upload
+    Route::post('/bulk', [MumineenController::class, 'bulkStore']);
+    Route::post('/auto-assign-groups', [MumineenController::class, 'autoAssignHizbeSaifeeGroups']);
 });
 
 // Protected API Routes
@@ -61,6 +65,16 @@ Route::prefix('pass-preferences')->middleware('decrypt.its_id')->group(function 
     Route::get('/vaaz-center-summary', [PassPreferenceController::class, 'vaazCenterSummary']);
     Route::put('lock-preferences', [PassPreferenceController::class, 'bulkUpdateLockStatus']);
     Route::put('bulk-assign-vaaz-center', [PassPreferenceController::class, 'bulkAssignVaazCenter']);
+});
+
+
+// Hizbe Saifee Group API Routes
+Route::group(['prefix' => 'hizbe-saifee-groups', 'middleware' => 'decrypt.its_id'], function () {
+    Route::get('/', [HizbeSaifeeGroupController::class, 'index']);
+    Route::post('/', [HizbeSaifeeGroupController::class, 'store']); // Handles bulk store
+    Route::get('/{hizbeSaifeeGroup}', [HizbeSaifeeGroupController::class, 'show']);
+    Route::put('/', [HizbeSaifeeGroupController::class, 'update']);    // Handles bulk update
+    Route::delete('/{hizbeSaifeeGroup}', [HizbeSaifeeGroupController::class, 'destroy']);
 });
 
 Route::group(['middleware' => 'auth:api'], function () {
@@ -89,6 +103,4 @@ Route::group(['middleware' => 'auth:api'], function () {
     // Accommodation API Routes
     Route::apiResource('accommodations', AccommodationController::class);
 
-    // Mumineen Bulk Upload
-    Route::post('/mumineen/bulk', [MumineenController::class, 'bulkStore']);
 });

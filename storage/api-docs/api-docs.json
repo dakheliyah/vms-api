@@ -589,6 +589,235 @@
                 ]
             }
         },
+        "/hizbe-saifee-groups": {
+            "get": {
+                "tags": [
+                    "Hizbe Saifee Groups"
+                ],
+                "summary": "Get list of Hizbe Saifee groups",
+                "description": "Returns list of Hizbe Saifee groups. Admin access required.",
+                "operationId": "getHizbeSaifeeGroupsList",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/HizbeSaifeeGroup"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden (Admin access required)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Hizbe Saifee Groups"
+                ],
+                "summary": "Update an existing Hizbe Saifee group",
+                "description": "Updates an existing Hizbe Saifee group. Admin access required.",
+                "operationId": "updateHizbeSaifeeGroup",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateHizbeSaifeeGroupRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/HizbeSaifeeGroup"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden (Admin access required)"
+                    },
+                    "404": {
+                        "description": "Resource Not Found"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Hizbe Saifee Groups"
+                ],
+                "summary": "Store a new Hizbe Saifee group",
+                "description": "Stores a new Hizbe Saifee group. Admin access required.",
+                "operationId": "storeHizbeSaifeeGroup",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreHizbeSaifeeGroupRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/HizbeSaifeeGroup"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden (Admin access required)"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/hizbe-saifee-groups/{id}": {
+            "get": {
+                "tags": [
+                    "Hizbe Saifee Groups"
+                ],
+                "summary": "Get Hizbe Saifee group information",
+                "description": "Returns Hizbe Saifee group data. Admin access required.",
+                "operationId": "getHizbeSaifeeGroupById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Hizbe Saifee Group id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HizbeSaifeeGroup"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden (Admin access required)"
+                    },
+                    "404": {
+                        "description": "Resource Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Hizbe Saifee Groups"
+                ],
+                "summary": "Delete an existing Hizbe Saifee group",
+                "description": "Deletes an existing Hizbe Saifee group. Admin access required.",
+                "operationId": "deleteHizbeSaifeeGroup",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Hizbe Saifee Group id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "success": true,
+                                    "message": "Hizbe Saifee Group deleted successfully."
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden (Admin access required)"
+                    },
+                    "404": {
+                        "description": "Resource Not Found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/mumineen": {
             "get": {
                 "tags": [
@@ -709,6 +938,12 @@
                                     "country": {
                                         "type": "string",
                                         "example": "United States"
+                                    },
+                                    "hizbe_saifee_group_id": {
+                                        "description": "ID of the assigned Hizbe Saifee Group",
+                                        "type": "integer",
+                                        "example": 1,
+                                        "nullable": true
                                     }
                                 },
                                 "type": "object"
@@ -879,6 +1114,12 @@
                                     "country": {
                                         "type": "string",
                                         "example": "United States"
+                                    },
+                                    "hizbe_saifee_group_id": {
+                                        "description": "ID of the assigned Hizbe Saifee Group",
+                                        "type": "integer",
+                                        "example": 1,
+                                        "nullable": true
                                     }
                                 },
                                 "type": "object"
@@ -1167,7 +1408,7 @@
                 "description": "Upload a CSV file to add, update, and remove Mumineen records. The CSV is treated as the source of truth. Any Mumineen in the database but not in the CSV will be deleted, along with their pass preferences. Requires admin authentication.",
                 "operationId": "bulkStoreMumineen",
                 "requestBody": {
-                    "description": "CSV file to upload. The first row must be a header row with column names matching the `mumineens` table fields (e.g., its_id, hof_id, fullname, etc.).",
+                    "description": "CSV file to upload. The first row must be a header row with column names matching the `mumineens` table fields (e.g., its_id, hof_id, fullname, gender, age, jamaat, mobile (optional), country (optional), etc.).",
                     "required": true,
                     "content": {
                         "multipart/form-data": {
@@ -1274,6 +1515,78 @@
                     },
                     "403": {
                         "description": "Forbidden (Admin access required)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/mumineen/auto-assign-groups": {
+            "post": {
+                "tags": [
+                    "Mumineen"
+                ],
+                "summary": "Automatically assign Mumineen to Hizbe Saifee groups",
+                "description": "Assigns Mumineen who currently have no Hizbe Saifee group to available groups based on family and group capacity. Requires admin authentication.",
+                "operationId": "autoAssignHizbeSaifeeGroups",
+                "responses": {
+                    "200": {
+                        "description": "Assignment process completed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Hizbe Saifee group assignment process completed."
+                                        },
+                                        "summary": {
+                                            "properties": {
+                                                "families_processed": {
+                                                    "type": "integer",
+                                                    "example": 10
+                                                },
+                                                "mumineen_assigned": {
+                                                    "type": "integer",
+                                                    "example": 45
+                                                },
+                                                "unassigned_families": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "hof_id": {
+                                                                "type": "string",
+                                                                "example": "encrypted_string"
+                                                            },
+                                                            "size": {
+                                                                "type": "integer",
+                                                                "example": 5
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden (Admin access required)"
+                    },
+                    "500": {
+                        "description": "An error occurred during the assignment process"
                     }
                 },
                 "security": [
@@ -2755,6 +3068,88 @@
     },
     "components": {
         "schemas": {
+            "StoreHizbeSaifeeGroupRequest": {
+                "title": "Store Hizbe Saifee Group Request",
+                "required": [
+                    "name",
+                    "capacity",
+                    "group_no"
+                ],
+                "properties": {
+                    "name": {
+                        "description": "Name of the group",
+                        "type": "string",
+                        "example": "Al-Ameen Group"
+                    },
+                    "capacity": {
+                        "description": "Capacity of the group",
+                        "type": "integer",
+                        "example": 50
+                    },
+                    "group_no": {
+                        "description": "Unique group number",
+                        "type": "integer",
+                        "example": 101
+                    },
+                    "whatsapp_link": {
+                        "description": "WhatsApp group link",
+                        "type": "string",
+                        "example": "https://chat.whatsapp.com/samplelink",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "UpdateHizbeSaifeeGroupRequest": {
+                "title": "Update Hizbe Saifee Group Request",
+                "required": [
+                    "id"
+                ],
+                "properties": {
+                    "id": {
+                        "description": "ID of the group to update",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "name": {
+                        "description": "Name of the group",
+                        "type": "string",
+                        "example": "Al-Ameen Group Updated"
+                    },
+                    "capacity": {
+                        "description": "Capacity of the group",
+                        "type": "integer",
+                        "example": 55
+                    },
+                    "group_no": {
+                        "description": "Unique group number",
+                        "type": "integer",
+                        "example": 102
+                    },
+                    "whatsapp_link": {
+                        "description": "WhatsApp group link",
+                        "type": "string",
+                        "example": "https://chat.whatsapp.com/newlink",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "HizbeSaifeeGroupResponse": {
+                "title": "Hizbe Saifee Group Response",
+                "properties": {
+                    "success": {
+                        "type": "boolean"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "data": {
+                        "$ref": "#/components/schemas/HizbeSaifeeGroup"
+                    }
+                },
+                "type": "object"
+            },
             "Accommodation": {
                 "required": [
                     "miqaat_id",
@@ -2763,45 +3158,53 @@
                     "name",
                     "address"
                 ],
-                "properties": {
-                    "id": {
-                        "type": "integer",
-                        "readOnly": true,
-                        "example": 1
+                "type": "object",
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HizbeSaifeeGroupResponse"
                     },
-                    "miqaat_id": {
-                        "type": "integer",
-                        "example": 1
-                    },
-                    "its_id": {
-                        "description": "Decrypted ITS ID",
-                        "type": "integer",
-                        "example": 12345678
-                    },
-                    "type": {
-                        "type": "string",
-                        "example": "Hotel"
-                    },
-                    "name": {
-                        "type": "string",
-                        "example": "Grand Hyatt"
-                    },
-                    "address": {
-                        "type": "string",
-                        "example": "123 Main St, Colombo"
-                    },
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "readOnly": true
-                    },
-                    "updated_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "readOnly": true
+                    {
+                        "properties": {
+                            "id": {
+                                "type": "integer",
+                                "readOnly": true,
+                                "example": 1
+                            },
+                            "miqaat_id": {
+                                "type": "integer",
+                                "example": 1
+                            },
+                            "its_id": {
+                                "description": "Decrypted ITS ID",
+                                "type": "integer",
+                                "example": 12345678
+                            },
+                            "type": {
+                                "type": "string",
+                                "example": "Hotel"
+                            },
+                            "name": {
+                                "type": "string",
+                                "example": "Grand Hyatt"
+                            },
+                            "address": {
+                                "type": "string",
+                                "example": "123 Main St, Colombo"
+                            },
+                            "created_at": {
+                                "type": "string",
+                                "format": "date-time",
+                                "readOnly": true
+                            },
+                            "updated_at": {
+                                "type": "string",
+                                "format": "date-time",
+                                "readOnly": true
+                            }
+                        },
+                        "type": "object"
                     }
-                },
-                "type": "object"
+                ]
             },
             "User": {
                 "title": "User",
@@ -2945,6 +3348,45 @@
                 },
                 "type": "object"
             },
+            "HizbeSaifeeGroup": {
+                "title": "Hizbe Saifee Group",
+                "description": "Hizbe Saifee Group model",
+                "properties": {
+                    "id": {
+                        "description": "ID",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "name": {
+                        "description": "Name of the group",
+                        "type": "string"
+                    },
+                    "capacity": {
+                        "description": "Capacity of the group",
+                        "type": "integer"
+                    },
+                    "group_no": {
+                        "description": "Unique group number",
+                        "type": "integer"
+                    },
+                    "whatsapp_link": {
+                        "description": "WhatsApp group link",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "description": "Creation timestamp",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "description": "Last update timestamp",
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
             "Miqaat": {
                 "title": "Miqaat",
                 "description": "Miqaat model schema (e.g., a religious occasion or event series)",
@@ -2979,6 +3421,145 @@
                             "$ref": "#/components/schemas/Event"
                         },
                         "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "Mumineen": {
+                "title": "Mumineen",
+                "description": "Mumineen model",
+                "properties": {
+                    "its_id": {
+                        "description": "Primary key ITS ID",
+                        "type": "integer"
+                    },
+                    "hof_id": {
+                        "description": "Head of Family ITS ID",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "fullname": {
+                        "description": "Full name",
+                        "type": "string"
+                    },
+                    "gender": {
+                        "description": "Gender",
+                        "type": "string",
+                        "enum": [
+                            "male",
+                            "female",
+                            "other"
+                        ]
+                    },
+                    "age": {
+                        "description": "Age",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "mobile": {
+                        "description": "Mobile number",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "country": {
+                        "description": "Country",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "jamaat": {
+                        "description": "Jamaat",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "idara": {
+                        "description": "Idara",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "category": {
+                        "description": "Category",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "prefix": {
+                        "description": "Prefix",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "title": {
+                        "description": "Title",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "venue_waaz": {
+                        "description": "Waaz Venue",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "city": {
+                        "description": "City",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "local_mehman": {
+                        "description": "Local Mehman Status",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "arr_place_date": {
+                        "description": "Arrival Place Date",
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "flight_code": {
+                        "description": "Flight Code",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "whatsapp_link_clicked": {
+                        "description": "WhatsApp Link Clicked Status",
+                        "type": "boolean",
+                        "nullable": true
+                    },
+                    "daily_trans": {
+                        "description": "Daily Transport",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "acc_arranged_at": {
+                        "description": "Accommodation Arranged At",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "acc_zone": {
+                        "description": "Accommodation Zone",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "hizbe_saifee_group_id": {
+                        "description": "ID of the assigned Hizbe Saifee Group",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "description": "Creation timestamp",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "description": "Last update timestamp",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "hizbe_saifee_group": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/HizbeSaifeeGroup"
+                            }
+                        ],
+                        "nullable": true,
+                        "description": "The assigned Hizbe Saifee Group"
                     }
                 },
                 "type": "object"
@@ -3061,68 +3642,6 @@
                 },
                 "type": "object"
             },
-            "Mumineen": {
-                "title": "Mumineen",
-                "description": "Mumineen model",
-                "properties": {
-                    "its_id": {
-                        "description": "8-digit ITS ID (primary key)",
-                        "type": "integer",
-                        "format": "int64",
-                        "example": 20324227
-                    },
-                    "eits_id": {
-                        "description": "8-digit EITS ID",
-                        "type": "integer",
-                        "format": "int64",
-                        "example": 20324228,
-                        "nullable": true
-                    },
-                    "hof_its_id": {
-                        "description": "8-digit HOF ITS ID",
-                        "type": "integer",
-                        "format": "int64",
-                        "example": 20324229,
-                        "nullable": true
-                    },
-                    "full_name": {
-                        "type": "string",
-                        "example": "John Doe"
-                    },
-                    "gender": {
-                        "type": "string",
-                        "enum": [
-                            "male",
-                            "female",
-                            "other"
-                        ],
-                        "example": "male"
-                    },
-                    "age": {
-                        "type": "integer",
-                        "example": 30
-                    },
-                    "mobile": {
-                        "type": "string",
-                        "example": "+1234567890"
-                    },
-                    "country": {
-                        "type": "string",
-                        "example": "United States"
-                    },
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "example": "2025-06-10T16:30:00.000000Z"
-                    },
-                    "updated_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "example": "2025-06-10T16:30:00.000000Z"
-                    }
-                },
-                "type": "object"
-            },
             "VaazCenter": {
                 "title": "Vaaz Center",
                 "description": "Vaaz Center model schema",
@@ -3195,6 +3714,10 @@
         {
             "name": "Authentication",
             "description": "API Endpoints for User Authentication"
+        },
+        {
+            "name": "Hizbe Saifee Groups",
+            "description": "API Endpoints for Hizbe Saifee Groups Management (Admin Only)"
         },
         {
             "name": "Pass Preferences",
