@@ -1292,8 +1292,8 @@ class PassPreferenceController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'its_id' => 'required|array',
-            'its_id.*' => 'string|exists:pass_preferences,its_id',
+            'its_ids' => 'required|array',
+            'its_ids.*' => 'string|exists:pass_preferences,its_id',
             'is_locked' => 'required|boolean',
         ]);
 
@@ -1302,12 +1302,12 @@ class PassPreferenceController extends Controller
         }
 
         $validatedData = $validator->validated();
-        $itsIds = $validatedData['its_id'];
+        $itsIds = $validatedData['its_ids'];
         $isLocked = $validatedData['is_locked'];
         $updatedCount = 0;
 
         DB::transaction(function () use ($itsIds, $isLocked, &$updatedCount) {
-            $updatedCount = PassPreference::whereIn('its_id', $itsIds)
+            $updatedCount = PassPreference::whereIn('its_ids', $itsIds)
                 ->update(['is_locked' => $isLocked]);
         });
 
