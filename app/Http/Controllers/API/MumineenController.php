@@ -63,9 +63,7 @@ class MumineenController extends Controller
             ]);
         } else {
             // If its_id is provided, return specific record (like the original show method)
-            // and ensure they belong to COLOMBO or JAFFNA jamaat
             $mumineen = Mumineen::where('its_id', $id)
-                                ->whereIn('jamaat', ['COLOMBO', 'JAFFNA'])
                                 ->first();
             
             if (!$mumineen) {
@@ -104,7 +102,8 @@ class MumineenController extends Controller
      *              @OA\Property(property="gender", type="string", example="male", enum={"male", "female"}),
      *              @OA\Property(property="age", type="integer", example=30),
      *              @OA\Property(property="mobile", type="string", example="1234567890"),
-     *              @OA\Property(property="country", type="string", example="United States")
+     *              @OA\Property(property="country", type="string", example="United States"),
+     *              @OA\Property(property="hizbe_saifee_group_id", type="integer", nullable=true, description="ID of the assigned Hizbe Saifee Group", example=1)
      *          )
      *      ),
      *      @OA\Response(
@@ -148,7 +147,9 @@ class MumineenController extends Controller
             ], 422);
         }
 
-        $mumineen = Mumineen::create($request->all());
+        $validatedData = $validator->validated();
+        $mumineen = Mumineen::create($validatedData);
+        $mumineen->load('hizbeSaifeeGroup');
 
         return response()->json([
             'success' => true,
@@ -206,7 +207,7 @@ class MumineenController extends Controller
             ], 400);
         }
         
-        $mumineen = Mumineen::where('its_id', $id)->first();
+        $mumineen = Mumineen::with('hizbeSaifeeGroup')->where('its_id', $id)->first();
 
         if (!$mumineen) {
             return response()->json([
@@ -248,7 +249,8 @@ class MumineenController extends Controller
      *              @OA\Property(property="gender", type="string", example="male", enum={"male", "female"}),
      *              @OA\Property(property="age", type="integer", example=31),
      *              @OA\Property(property="mobile", type="string", example="1234567890"),
-     *              @OA\Property(property="country", type="string", example="United States")
+     *              @OA\Property(property="country", type="string", example="United States"),
+     *              @OA\Property(property="hizbe_saifee_group_id", type="integer", nullable=true, description="ID of the assigned Hizbe Saifee Group", example=1)
      *          )
      *      ),
      *      @OA\Response(
@@ -304,7 +306,9 @@ class MumineenController extends Controller
             ], 404);
         }
 
-        $mumineen->update($request->all());
+        $validatedData = $validator->validated();
+        $mumineen->update($validatedData);
+        $mumineen->load('hizbeSaifeeGroup');
 
         return response()->json([
             'success' => true,
