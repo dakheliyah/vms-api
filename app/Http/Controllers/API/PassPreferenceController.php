@@ -1321,8 +1321,8 @@ class PassPreferenceController extends Controller
      *      path="/api/pass-preferences/bulk-assign-vaaz-center",
      *      operationId="bulkAssignVaazCenter",
      *      tags={"Pass Preferences"},
-     *      summary="Bulk assign multiple Mumineen to a Vaaz Center",
-     *      description="Assigns a list of Mumineen (by ITS ID) to a specified Vaaz Center for a given event. This is an admin-only endpoint that checks for gender-specific capacity.",
+     *      summary="Bulk assign or update multiple Mumineen to a Vaaz Center (Upsert)",
+     *      description="Assigns a list of Mumineen (by ITS ID) to a specified Vaaz Center for a given event. If a PassPreference record doesn't exist for an ITS ID and event, it will be created. Otherwise, the existing record is updated. This is an admin-only endpoint that checks for gender-specific capacity.",
      *      security={{"bearerAuth":{}}},
      *      @OA\RequestBody(
      *          required=true,
@@ -1331,7 +1331,7 @@ class PassPreferenceController extends Controller
      *              required={"event_id", "vaaz_center_id", "its_ids", "gender"},
      *              @OA\Property(property="event_id", type="integer", description="The ID of the event."),
      *              @OA\Property(property="vaaz_center_id", type="integer", description="The ID of the Vaaz Center to assign."),
-     *              @OA\Property(property="its_ids", type="array", @OA\Items(type="string"), description="An array of Mumineen ITS IDs to assign."),
+     *              @OA\Property(property="its_ids", type="array", @OA\Items(type="string"), description="An array of Mumineen ITS IDs. Each ITS ID must exist in the 'mumineen' table. Pass preferences will be created if they don't exist for the event, or updated if they do."),
      *              @OA\Property(property="gender", type="string", enum={"male", "female"}, description="The gender to assign, used for capacity checking.")
      *          )
      *      ),
@@ -1351,7 +1351,11 @@ class PassPreferenceController extends Controller
             'event_id' => 'required|integer|exists:events,id',
             'vaaz_center_id' => 'required|integer|exists:vaaz_centers,id',
             'its_ids' => 'required|array',
-            'its_ids.*' => 'required|string|exists:pass_preferences,its_id',
+            'its_ids.*' => [
+                'required',
+                'string',
+                Rule::exists('mumineen', 'its_id'),
+            ],
             'gender' => ['required', Rule::in(array_column(Gender::cases(), 'value'))],
         ]);
 
@@ -1377,40 +1381,76 @@ class PassPreferenceController extends Controller
             DB::transaction(function () use ($eventId, $vaazCenterId, $itsIds, $gender, &$updatedCount) {
                 $vaazCenter = VaazCenter::lockForUpdate()->find($vaazCenterId);
                 if (!$vaazCenter) {
-                    // This should ideally be caught by validation, but as a safeguard:
                     throw new \Exception('Vaaz Center not found.', 404);
                 }
 
                 $capacity = ($gender === Gender::MALE->value) ? $vaazCenter->male_capacity : $vaazCenter->female_capacity;
 
-                // Capacity Check
+                // Calculate current occupancy for the target Vaaz center and gender
                 $currentOccupancy = PassPreference::where('event_id', $eventId)
                     ->where('vaaz_center_id', $vaazCenterId)
                     ->whereHas('mumineen', function ($query) use ($gender) {
                         $query->where('gender', $gender);
                     })
                     ->count();
-                
-                $newAssignmentsCount = PassPreference::whereIn('its_id', $itsIds)
-                    ->where('event_id', $eventId)
-                    ->where(function ($query) use ($vaazCenterId) {
-                        $query->where('vaaz_center_id', '!=', $vaazCenterId)->orWhereNull('vaaz_center_id');
-                    })
-                    ->count();
 
-                if (($currentOccupancy + $newAssignmentsCount) > $capacity) {
+                // Calculate how many new slots are actually needed from the input $itsIds
+                $slotsNeeded = 0;
+                if (!empty($itsIds)) { // Ensure $itsIds is not empty before querying
+                    $existingPreferencesForInputItsIds = PassPreference::whereIn('its_id', $itsIds)
+                        ->where('event_id', $eventId)
+                        ->get()
+                        ->keyBy('its_id');
+
+                    foreach ($itsIds as $itsId) {
+                        if (!isset($existingPreferencesForInputItsIds[$itsId])) {
+                            // This ITS ID has no pass preference for this event yet, will be a new assignment
+                            $slotsNeeded++;
+                        } else {
+                            $preference = $existingPreferencesForInputItsIds[$itsId];
+                            if ($preference->vaaz_center_id != $vaazCenterId) {
+                                // This ITS ID has a preference, but for a different (or null) Vaaz center
+                                $slotsNeeded++;
+                            }
+                        }
+                    }
+                }
+                
+                if (($currentOccupancy + $slotsNeeded) > $capacity) {
                     throw new \Exception(json_encode([
                         'message' => 'Assigning these Mumineen would exceed the Vaaz Center capacity for the specified gender.',
                         'gender' => $gender,
                         'capacity' => $capacity,
                         'current_occupancy' => $currentOccupancy,
-                        'new_assignments' => $newAssignmentsCount,
+                        'slots_needed_for_new_assignments' => $slotsNeeded,
                     ]), 422);
                 }
 
-                $updatedCount = PassPreference::whereIn('its_id', $itsIds)
-                    ->where('event_id', $eventId)
-                    ->update(['vaaz_center_id' => $vaazCenterId]);
+                $actuallyUpdatedOrCreatedCount = 0;
+                if (!empty($itsIds)) {
+                    foreach ($itsIds as $itsId) {
+                        // Use firstOrNew to get existing or new model instance
+                        $preference = PassPreference::firstOrNew(
+                            ['its_id' => $itsId, 'event_id' => $eventId]
+                        );
+                        
+                        $isNew = !$preference->exists;
+                        $oldVaazCenterId = $preference->vaaz_center_id; // Capture old value before changing
+
+                        // Set the new values
+                        $preference->vaaz_center_id = $vaazCenterId;
+                        $preference->is_locked = false; 
+                        // pass_type is nullable and will be left as is if existing, or null if new
+
+                        $preference->save(); // This performs insert or update
+
+                        // Count if it was a new record or if the vaaz_center_id actually changed
+                        if ($isNew || ($oldVaazCenterId != $vaazCenterId)) {
+                            $actuallyUpdatedOrCreatedCount++;
+                        }
+                    }
+                }
+                $updatedCount = $actuallyUpdatedOrCreatedCount; // Assign to the variable passed by reference
             });
 
             return response()->json(['message' => "Successfully assigned {$updatedCount} Mumineen to the Vaaz Center."]);

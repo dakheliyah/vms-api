@@ -2697,8 +2697,8 @@
                 "tags": [
                     "Pass Preferences"
                 ],
-                "summary": "Bulk assign multiple Mumineen to a Vaaz Center",
-                "description": "Assigns a list of Mumineen (by ITS ID) to a specified Vaaz Center for a given event. This is an admin-only endpoint that checks for gender-specific capacity.",
+                "summary": "Bulk assign or update multiple Mumineen to a Vaaz Center (Upsert)",
+                "description": "Assigns a list of Mumineen (by ITS ID) to a specified Vaaz Center for a given event. If a PassPreference record doesn't exist for an ITS ID and event, it will be created. Otherwise, the existing record is updated. This is an admin-only endpoint that checks for gender-specific capacity.",
                 "operationId": "bulkAssignVaazCenter",
                 "requestBody": {
                     "description": "Object containing the event ID, Vaaz Center ID, an array of ITS IDs, and the gender.",
@@ -2722,7 +2722,7 @@
                                         "type": "integer"
                                     },
                                     "its_ids": {
-                                        "description": "An array of Mumineen ITS IDs to assign.",
+                                        "description": "An array of Mumineen ITS IDs. Each ITS ID must exist in the 'mumineen' table. Pass preferences will be created if they don't exist for the event, or updated if they do.",
                                         "type": "array",
                                         "items": {
                                             "type": "string"
