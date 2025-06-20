@@ -493,7 +493,26 @@ class MumineenController extends Controller
      *              @OA\Property(
      *                  property="data",
      *                  type="array",
-     *                  @OA\Items(ref="#/components/schemas/Mumineen")
+     *                  @OA\Items(
+     *                      type="object",
+     *                      allOf={@OA\Schema(ref="#/components/schemas/Mumineen")},
+     *                      @OA\Property(
+     *                          property="pass_preferences",
+     *                          description="List of pass preferences for the event, with vaaz_center object replaced by vaaz_center_name.",
+     *                          type="array",
+     *                          @OA\Items(
+     *                              type="object",
+     *                              @OA\Property(property="id", type="integer", example=1),
+     *                              @OA\Property(property="its_id", type="integer", example=10101010),
+     *                              @OA\Property(property="event_id", type="integer", example=1),
+     *                              @OA\Property(property="pass_type", type="string", example="GENERAL"),
+     *                              @OA\Property(property="vaaz_center_id", type="integer", example=5),
+     *                              @OA\Property(property="block_id", type="integer", example=2),
+     *                              @OA\Property(property="vaaz_center_name", type="string", example="Al-Masjid al-Husayni"),
+     *                              @OA\Property(property="block", ref="#/components/schemas/Block")
+     *                          )
+     *                      )
+     *                  )
      *              )
      *          )
      *      ),
@@ -525,8 +544,21 @@ class MumineenController extends Controller
 
         $allMumineen = Mumineen::with(['passPreferences' => function ($query) use ($eventId) {
             $query->where('event_id', $eventId)
-                  ->with(['block', 'vaazCenter']); // Eager load details from pass
+                  ->with([
+                      'block', // Assuming full block object is fine for now
+                      'vaazCenter:id,name' // Eager load only id and name for vaazCenter
+                  ]);
         }])->get();
+
+        // Add vaaz_center_name to each pass preference and remove the vaazCenter object
+        $allMumineen->each(function ($mumineen) {
+            if ($mumineen->passPreferences) {
+                $mumineen->passPreferences->each(function ($preference) {
+                    $preference->vaaz_center_name = optional($preference->vaazCenter)->name;
+                    unset($preference->vaazCenter); // Remove the vaazCenter object after extracting the name
+                });
+            }
+        });
 
         return response()->json([
             'success' => true,
