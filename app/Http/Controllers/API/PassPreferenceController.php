@@ -217,7 +217,19 @@ class PassPreferenceController extends Controller
             $vaazCentersQuery->where('id', $vaazCenterId);
         }
 
-        $vaazCenters = $vaazCentersQuery->withCount('passPreferences') // Count passes directly associated with the VaazCenter
+        $vaazCenters = $vaazCentersQuery->withCount([
+            'passPreferences', // Total issued passes, will be 'pass_preferences_count'
+            'passPreferences as male_issued_passes' => function ($query) {
+                $query->whereHas('mumineen', function ($subQuery) {
+                    $subQuery->where('gender', 'male'); // Assuming 'male' is the value in Mumineen table
+                });
+            },
+            'passPreferences as female_issued_passes' => function ($query) {
+                $query->whereHas('mumineen', function ($subQuery) {
+                    $subQuery->where('gender', 'female'); // Assuming 'female' is the value in Mumineen table
+                });
+            }
+        ])
             ->get();
 
         if ($vaazCenterId && $vaazCenters->isEmpty()) {
@@ -225,16 +237,35 @@ class PassPreferenceController extends Controller
         }
 
         $summary = $vaazCenters->map(function ($vaazCenter) {
-            $vaazCenterIssuedPasses = $vaazCenter->pass_preferences_count ?? 0;
-            $vaazCenterCapacity = $vaazCenter->est_capacity ?? 0;
-            $vaazCenterAvailability = ($vaazCenterCapacity > 0) ? ($vaazCenterCapacity - $vaazCenterIssuedPasses) : 'unlimited';
+            // Overall capacity (est_capacity)
+            $totalIssuedPasses = $vaazCenter->pass_preferences_count ?? 0;
+            $totalCapacity = $vaazCenter->est_capacity; // Keep as is, could be null
+            $totalAvailability = isset($totalCapacity) && $totalCapacity > 0 ? ($totalCapacity - $totalIssuedPasses) : (isset($totalCapacity) ? 0 : 'unlimited');
+
+            // Male capacity
+            $maleIssuedPasses = $vaazCenter->male_issued_passes ?? 0;
+            $maleCapacity = $vaazCenter->male_capacity; // Could be null
+            $maleAvailability = isset($maleCapacity) && $maleCapacity > 0 ? ($maleCapacity - $maleIssuedPasses) : (isset($maleCapacity) ? 0 : 'Not Set');
+
+            // Female capacity
+            $femaleIssuedPasses = $vaazCenter->female_issued_passes ?? 0;
+            $femaleCapacity = $vaazCenter->female_capacity; // Could be null
+            $femaleAvailability = isset($femaleCapacity) && $femaleCapacity > 0 ? ($femaleCapacity - $femaleIssuedPasses) : (isset($femaleCapacity) ? 0 : 'Not Set');
 
             return [
                 'id' => $vaazCenter->id,
                 'name' => $vaazCenter->name,
-                'vaaz_center_capacity' => $vaazCenterCapacity,
-                'vaaz_center_issued_passes' => $vaazCenterIssuedPasses,
-                'vaaz_center_availability' => $vaazCenterAvailability,
+                'total_capacity' => $totalCapacity ?? 'Not Set',
+                'total_issued_passes' => $totalIssuedPasses,
+                'total_availability' => $totalAvailability,
+
+                'male_capacity' => $maleCapacity ?? 'Not Set',
+                'male_issued_passes' => $maleIssuedPasses,
+                'male_availability' => $maleAvailability,
+
+                'female_capacity' => $femaleCapacity ?? 'Not Set',
+                'female_issued_passes' => $femaleIssuedPasses,
+                'female_availability' => $femaleAvailability,
             ];
         });
 
@@ -751,13 +782,57 @@ class PassPreferenceController extends Controller
                         throw new \Exception("VAAZ_CENTER_EVENT_MISMATCH_ITS_{$itsId}", 422);
                     }
 
-                    // Only check capacity if moving to a *different* Vaaz Center and it has a defined capacity
-                    if ($newVaazCenter->est_capacity > 0 && $passPreference->vaaz_center_id != $newVaazCenterId) {
-                        $currentPassesInNewCenter = PassPreference::where('vaaz_center_id', $newVaazCenterId)
-                                                              ->where('event_id', $eventId) // Count for the same event
-                                                              ->count();
-                        if ($currentPassesInNewCenter >= $newVaazCenter->est_capacity) {
-                            throw new \Exception("VAAZ_CENTER_FULL_ITS_{$itsId}", 422);
+                    // Only check capacity if moving to a *different* Vaaz Center
+                    if ($passPreference->vaaz_center_id != $newVaazCenterId) {
+                        // Fetch Mumineen to check gender
+                        $mumineen = Mumineen::find($itsId);
+                        if (!$mumineen) {
+                            // This case should ideally not be hit if its_id in passPreference is valid and exists in mumineens table
+                            throw new \Exception("MUMINEEN_NOT_FOUND_FOR_ITS_{$itsId}_EVENT_{$eventId}", 404);
+                        }
+                        $gender = isset($mumineen->gender) ? strtolower($mumineen->gender) : null;
+
+                        $capacityFull = false;
+                        $capacityMessage = "";
+
+                        if ($gender === 'male') {
+                            if ($newVaazCenter->male_capacity === null || $newVaazCenter->male_capacity == 0) {
+                                $capacityFull = true;
+                                $capacityMessage = "VAAZ_CENTER_NO_MALE_CAPACITY_ITS_{$itsId}_VC_{$newVaazCenterId}";
+                            } else {
+                                $currentMaleCount = PassPreference::join('mumineens', 'pass_preferences.its_id', '=', 'mumineens.its_id')
+                                    ->where('pass_preferences.vaaz_center_id', $newVaazCenterId)
+                                    ->where('pass_preferences.event_id', $eventId)
+                                    ->whereRaw('LOWER(mumineens.gender) = ?', ['male'])
+                                    ->count();
+                                if ($currentMaleCount >= $newVaazCenter->male_capacity) {
+                                    $capacityFull = true;
+                                    $capacityMessage = "VAAZ_CENTER_MALE_FULL_ITS_{$itsId}_VC_{$newVaazCenterId}";
+                                }
+                            }
+                        } elseif ($gender === 'female') {
+                            if ($newVaazCenter->female_capacity === null || $newVaazCenter->female_capacity == 0) {
+                                $capacityFull = true;
+                                $capacityMessage = "VAAZ_CENTER_NO_FEMALE_CAPACITY_ITS_{$itsId}_VC_{$newVaazCenterId}";
+                            } else {
+                                $currentFemaleCount = PassPreference::join('mumineens', 'pass_preferences.its_id', '=', 'mumineens.its_id')
+                                    ->where('pass_preferences.vaaz_center_id', $newVaazCenterId)
+                                    ->where('pass_preferences.event_id', $eventId)
+                                    ->whereRaw('LOWER(mumineens.gender) = ?', ['female'])
+                                    ->count();
+                                if ($currentFemaleCount >= $newVaazCenter->female_capacity) {
+                                    $capacityFull = true;
+                                    $capacityMessage = "VAAZ_CENTER_FEMALE_FULL_ITS_{$itsId}_VC_{$newVaazCenterId}";
+                                }
+                            }
+                        } else { // Gender is not 'male' or 'female' (includes null, empty, or other genders)
+                            $capacityFull = true;
+                            $genderDisplay = $gender ?: 'unspecified';
+                            $capacityMessage = "VAAZ_CENTER_UNSUPPORTED_GENDER_ITS_{$itsId}_GENDER_{$genderDisplay}_VC_{$newVaazCenterId}";
+                        }
+
+                        if ($capacityFull) {
+                            throw new \Exception($capacityMessage, 422);
                         }
                     }
 
@@ -779,13 +854,17 @@ class PassPreferenceController extends Controller
             $errorCode = PassPreferenceErrorCode::UNKNOWN_ERROR;
             $details = ['original_message' => $message];
             $userMessage = 'An unexpected error occurred while updating Vaaz Center preferences.';
-            // Prioritize exception code for 404, otherwise default to 422 for business logic errors
-            $statusCode = $e->getCode() == 404 ? 404 : 422;
+            $statusCode = $e->getCode() == 404 ? 404 : ($e->getCode() == 422 ? 422 : 500); // Default to 422 for business logic, 404 for not found, 500 for others
 
             if (preg_match('/PASS_PREFERENCE_NOT_FOUND_FOR_ITS_(\d+)_EVENT_(\d+)/', $message, $matches)) {
                 $errorCode = PassPreferenceErrorCode::RESOURCE_NOT_FOUND;
                 $userMessage = "Pass Preference not found for ITS {$matches[1]} and Event ID {$matches[2]}.";
                 $details = ['its_id' => $matches[1], 'event_id' => $matches[2], 'resource_type' => 'PassPreference'];
+                $statusCode = 404;
+            } elseif (preg_match('/MUMINEEN_NOT_FOUND_FOR_ITS_(\d+)_EVENT_(\d+)/', $message, $matches)) {
+                $errorCode = PassPreferenceErrorCode::RESOURCE_NOT_FOUND;
+                $userMessage = "Mumineen record not found for ITS {$matches[1]} to perform capacity check for event {$matches[2]}.";
+                $details = ['its_id' => $matches[1], 'event_id' => $matches[2], 'resource_type' => 'Mumineen'];
                 $statusCode = 404;
             } elseif (preg_match('/VAAZ_CENTER_NOT_FOUND_(\d+)/', $message, $matches)) {
                 $errorCode = PassPreferenceErrorCode::RESOURCE_NOT_FOUND;
@@ -796,10 +875,37 @@ class PassPreferenceController extends Controller
                 $errorCode = PassPreferenceErrorCode::VAAZ_CENTER_EVENT_MISMATCH;
                 $userMessage = "The selected Vaaz Center for ITS {$matches[1]} does not belong to the specified event.";
                 $details = ['its_id' => $matches[1]];
-            } elseif (preg_match('/VAAZ_CENTER_FULL_ITS_(\d+)/', $message, $matches)) {
+                $statusCode = 422;
+            } elseif (preg_match('/VAAZ_CENTER_NO_MALE_CAPACITY_ITS_(\d+)_VC_(\d+)/', $message, $matches)) {
+                $errorCode = PassPreferenceErrorCode::VAAZ_CENTER_CAPACITY_GENDER_UNAVAILABLE;
+                $userMessage = "The selected Vaaz Center ID {$matches[2]} for ITS {$matches[1]} has no defined capacity for males.";
+                $details = ['its_id' => $matches[1], 'vaaz_center_id' => $matches[2], 'gender' => 'male'];
+                $statusCode = 422;
+            } elseif (preg_match('/VAAZ_CENTER_MALE_FULL_ITS_(\d+)_VC_(\d+)/', $message, $matches)) {
                 $errorCode = PassPreferenceErrorCode::VAAZ_CENTER_FULL;
-                $userMessage = "The selected Vaaz Center for ITS {$matches[1]} is full.";
+                $userMessage = "The selected Vaaz Center ID {$matches[2]} for ITS {$matches[1]} is full for males.";
+                $details = ['its_id' => $matches[1], 'vaaz_center_id' => $matches[2], 'gender' => 'male'];
+                $statusCode = 422;
+            } elseif (preg_match('/VAAZ_CENTER_NO_FEMALE_CAPACITY_ITS_(\d+)_VC_(\d+)/', $message, $matches)) {
+                $errorCode = PassPreferenceErrorCode::VAAZ_CENTER_CAPACITY_GENDER_UNAVAILABLE;
+                $userMessage = "The selected Vaaz Center ID {$matches[2]} for ITS {$matches[1]} has no defined capacity for females.";
+                $details = ['its_id' => $matches[1], 'vaaz_center_id' => $matches[2], 'gender' => 'female'];
+                $statusCode = 422;
+            } elseif (preg_match('/VAAZ_CENTER_FEMALE_FULL_ITS_(\d+)_VC_(\d+)/', $message, $matches)) {
+                $errorCode = PassPreferenceErrorCode::VAAZ_CENTER_FULL;
+                $userMessage = "The selected Vaaz Center ID {$matches[2]} for ITS {$matches[1]} is full for females.";
+                $details = ['its_id' => $matches[1], 'vaaz_center_id' => $matches[2], 'gender' => 'female'];
+                $statusCode = 422;
+            } elseif (preg_match('/VAAZ_CENTER_UNSUPPORTED_GENDER_ITS_(\d+)_GENDER_(.+)_VC_(\d+)/', $message, $matches)) {
+                $errorCode = PassPreferenceErrorCode::VAAZ_CENTER_CAPACITY_GENDER_UNSUPPORTED;
+                $userMessage = "The selected Vaaz Center ID {$matches[3]} for ITS {$matches[1]} does not support preferences for gender '{$matches[2]}'.";
+                $details = ['its_id' => $matches[1], 'gender' => $matches[2], 'vaaz_center_id' => $matches[3]];
+                $statusCode = 422;
+            } elseif (preg_match('/VAAZ_CENTER_FULL_ITS_(\d+)/', $message, $matches)) { // Generic fallback, should be less common now
+                $errorCode = PassPreferenceErrorCode::VAAZ_CENTER_FULL;
+                $userMessage = "The selected Vaaz Center for ITS {$matches[1]} is full (general capacity). Contact support if gender specific capacity should apply.";
                 $details = ['its_id' => $matches[1]];
+                $statusCode = 422;
             }
 
             return response()->json([
@@ -946,25 +1052,73 @@ class PassPreferenceController extends Controller
                     $vaazCenterId = $preferenceData['vaaz_center_id'];
 
                     // Check for uniqueness within the transaction
-                    $existing = PassPreference::where('its_id', $itsId)->where('event_id', $eventId)->lockForUpdate()->first();
+                    $existing = PassPreference::where('its_id', $itsId)
+                                                ->where('event_id', $eventId)
+                                                ->lockForUpdate()
+                                                ->first();
                     if ($existing) {
-                        throw new \Exception("A pass preference already exists for ITS {$itsId} and Event ID {$eventId}.", 422);
+                        throw new \Exception("Pass preference for ITS {$itsId} and Event {$eventId} already exists.");
                     }
 
+                    // Fetch Mumineen to check gender
+                    $mumineen = Mumineen::find($itsId);
+                    if (!$mumineen) {
+                        throw new \Exception("Mumineen with ITS ID {$itsId} not found.");
+                    }
+                    $gender = isset($mumineen->gender) ? strtolower($mumineen->gender) : null;
+
+                    // Fetch Vaaz Center
                     $vaazCenter = VaazCenter::find($vaazCenterId);
                     if (!$vaazCenter) {
-                         throw new \Exception("Target Vaaz Center with ID {$vaazCenterId} not found.", 404);
+                        throw new \Exception("Vaaz Center with ID {$vaazCenterId} not found.");
                     }
 
-                    if ($vaazCenter->event_id != $eventId) {
-                        throw new \Exception("The selected Vaaz Center for ITS {$itsId} does not belong to the specified event.", 422);
+                    // Check if Vaaz Center is assigned to the correct event
+                    if ($vaazCenter->event_id !== null && $vaazCenter->event_id != $eventId) {
+                        throw new \Exception("Vaaz Center ID {$vaazCenterId} is not assigned to Event ID {$eventId}.");
                     }
 
-                    if ($vaazCenter->est_capacity > 0) {
-                        $currentPassesInCenter = PassPreference::where('vaaz_center_id', $vaazCenterId)->count();
-                        if ($currentPassesInCenter >= $vaazCenter->est_capacity) {
-                            throw new \Exception("The selected Vaaz Center for ITS {$itsId} is full.", 422);
+                    $capacityFull = false;
+                    $capacityMessage = "";
+
+                    if ($gender === 'male') {
+                        if ($vaazCenter->male_capacity === null || $vaazCenter->male_capacity == 0) {
+                            $capacityFull = true;
+                            $capacityMessage = "Vaaz Center ID {$vaazCenterId} has no defined or available male capacity for Event ID {$eventId}.";
+                        } else {
+                            $currentMaleCount = PassPreference::join('mumineens', 'pass_preferences.its_id', '=', 'mumineens.its_id')
+                                ->where('pass_preferences.vaaz_center_id', $vaazCenterId)
+                                ->where('pass_preferences.event_id', $eventId)
+                                ->whereRaw('LOWER(mumineens.gender) = ?', ['male'])
+                                ->count();
+                            if ($currentMaleCount >= $vaazCenter->male_capacity) {
+                                $capacityFull = true;
+                                $capacityMessage = "Vaaz Center ID {$vaazCenterId} is full for males for Event ID {$eventId}.";
+                            }
                         }
+                    } elseif ($gender === 'female') {
+                        if ($vaazCenter->female_capacity === null || $vaazCenter->female_capacity == 0) {
+                            $capacityFull = true;
+                            $capacityMessage = "Vaaz Center ID {$vaazCenterId} has no defined or available female capacity for Event ID {$eventId}.";
+                        } else {
+                            $currentFemaleCount = PassPreference::join('mumineens', 'pass_preferences.its_id', '=', 'mumineens.its_id')
+                                ->where('pass_preferences.vaaz_center_id', $vaazCenterId)
+                                ->where('pass_preferences.event_id', $eventId)
+                                ->whereRaw('LOWER(mumineens.gender) = ?', ['female'])
+                                ->count();
+                            if ($currentFemaleCount >= $vaazCenter->female_capacity) {
+                                $capacityFull = true;
+                                $capacityMessage = "Vaaz Center ID {$vaazCenterId} is full for females for Event ID {$eventId}.";
+                            }
+                        }
+                    } else { // Gender is not 'male' or 'female' (includes null, empty, or other genders)
+                        $capacityFull = true;
+                        $genderDisplay = $gender ?: 'unspecified';
+                        $capacityMessage = "Vaaz Center ID {$vaazCenterId} does not support pass preference for '{$genderDisplay}' gender, or gender is not specified.";
+                    }
+
+                    if ($capacityFull) {
+                        throw new \Exception($capacityMessage);
                     }
 
                     $passPreference = PassPreference::create([
@@ -972,14 +1126,16 @@ class PassPreferenceController extends Controller
                         'event_id' => $eventId,
                         'vaaz_center_id' => $vaazCenterId,
                     ]);
-
-                    $createdPreferences[] = $passPreference->load(['block', 'vaazCenter', 'event']);
+                    $createdPreferences[] = $passPreference->load(['vaazCenter', 'event']);
                 }
             });
         } catch (\Exception $e) {
-            $statusCode = in_array($e->getCode(), [403, 404]) ? $e->getCode() : 422;
+            // Ensure getCode() returns an int for HTTP status codes
+            $exceptionCode = $e->getCode();
+            $statusCode = (is_int($exceptionCode) && in_array($exceptionCode, [400, 401, 403, 404])) ? $exceptionCode : 422;
             return response()->json(['message' => $e->getMessage()], $statusCode);
         }
+
 
         return response()->json($createdPreferences, 201);
     }

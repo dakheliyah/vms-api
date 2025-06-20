@@ -46,6 +46,8 @@ class VaazCenter extends Model
     protected $fillable = [
         'name',
         'est_capacity',
+        'male_capacity',
+        'female_capacity',
         'lat',
         'long',
         'event_id',

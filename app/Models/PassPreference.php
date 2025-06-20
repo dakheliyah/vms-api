@@ -76,4 +76,12 @@ class PassPreference extends Model
     {
         return $this->belongsTo(Event::class, 'event_id');
     }
+
+    /**
+     * Get the mumineen that owns the pass preference.
+     */
+    public function mumineen()
+    {
+        return $this->belongsTo(Mumineen::class, 'its_id', 'its_id');
+    }
 }

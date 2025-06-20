@@ -2219,6 +2219,308 @@
                     }
                 ]
             }
+        },
+        "/api/vaaz-centers": {
+            "get": {
+                "tags": [
+                    "Vaaz Centers"
+                ],
+                "summary": "Get list of Vaaz Centers or a single one by ID",
+                "description": "Returns a list of Vaaz Centers. Can be filtered by event_id or a single Vaaz Center by id. Requires authentication.",
+                "operationId": "getVaazCentersListOrSingle",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "ID of the Vaaz Center to retrieve.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "event_id",
+                        "in": "query",
+                        "description": "Filter Vaaz Centers by Event ID.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/VaazCenter"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "404": {
+                        "description": "Vaaz Center not found (if ID is provided and not found)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Vaaz Centers"
+                ],
+                "summary": "Create a new Vaaz Center",
+                "description": "Stores a new Vaaz Center record. Requires authentication.",
+                "operationId": "storeVaazCenter",
+                "requestBody": {
+                    "description": "Vaaz Center data object.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "est_capacity"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Al Masjid Al Husaini"
+                                    },
+                                    "est_capacity": {
+                                        "description": "Estimated total capacity.",
+                                        "type": "integer",
+                                        "example": 1000
+                                    },
+                                    "male_capacity": {
+                                        "description": "Estimated male capacity.",
+                                        "type": "integer",
+                                        "example": 500,
+                                        "nullable": true
+                                    },
+                                    "female_capacity": {
+                                        "description": "Estimated female capacity.",
+                                        "type": "integer",
+                                        "example": 500,
+                                        "nullable": true
+                                    },
+                                    "lat": {
+                                        "description": "Latitude.",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 6.9271,
+                                        "nullable": true
+                                    },
+                                    "long": {
+                                        "description": "Longitude.",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 79.8612,
+                                        "nullable": true
+                                    },
+                                    "event_id": {
+                                        "description": "Associated Event ID.",
+                                        "type": "integer",
+                                        "example": 1,
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Vaaz Center created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VaazCenter"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Unauthenticated."
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "The given data was invalid.",
+                                    "errors": []
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/vaaz-centers/{id}": {
+            "put": {
+                "tags": [
+                    "Vaaz Centers"
+                ],
+                "summary": "Update an existing Vaaz Center",
+                "description": "Updates an existing Vaaz Center record. Requires authentication.",
+                "operationId": "updateVaazCenter",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the Vaaz Center to update.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Vaaz Center data to update.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Al Masjid Al Husaini - Updated"
+                                    },
+                                    "est_capacity": {
+                                        "description": "Estimated total capacity.",
+                                        "type": "integer",
+                                        "example": 1200
+                                    },
+                                    "male_capacity": {
+                                        "description": "Estimated male capacity.",
+                                        "type": "integer",
+                                        "example": 600,
+                                        "nullable": true
+                                    },
+                                    "female_capacity": {
+                                        "description": "Estimated female capacity.",
+                                        "type": "integer",
+                                        "example": 600,
+                                        "nullable": true
+                                    },
+                                    "lat": {
+                                        "description": "Latitude.",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 6.9275,
+                                        "nullable": true
+                                    },
+                                    "long": {
+                                        "description": "Longitude.",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 79.8615,
+                                        "nullable": true
+                                    },
+                                    "event_id": {
+                                        "description": "Associated Event ID.",
+                                        "type": "integer",
+                                        "example": 1,
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Vaaz Center updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VaazCenter"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "404": {
+                        "description": "Vaaz Center not found"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Vaaz Centers"
+                ],
+                "summary": "Delete a Vaaz Center",
+                "description": "Deletes a Vaaz Center by its ID. Requires authentication.",
+                "operationId": "deleteVaazCenter",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the Vaaz Center to delete.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Vaaz Center deleted successfully"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "404": {
+                        "description": "Vaaz Center not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
         }
     },
     "components": {
@@ -2670,6 +2972,10 @@
         {
             "name": "Mumineen",
             "description": "Mumineen"
+        },
+        {
+            "name": "Vaaz Centers",
+            "description": "Vaaz Centers"
         }
     ]
 }

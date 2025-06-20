@@ -18,6 +18,10 @@ enum PassPreferenceErrorCode: string
     case BLOCK_FULL = 'BLOCK_FULL';
     case ITS_ID_ALREADY_EXISTS_FOR_EVENT = 'ITS_ID_ALREADY_EXISTS_FOR_EVENT'; // For unique constraint on its_id + event_id
 
+    // Gender-specific capacity errors
+    case VAAZ_CENTER_CAPACITY_GENDER_UNAVAILABLE = 'VAAZ_CENTER_CAPACITY_GENDER_UNAVAILABLE'; // e.g. No male_capacity defined
+    case VAAZ_CENTER_CAPACITY_GENDER_UNSUPPORTED = 'VAAZ_CENTER_CAPACITY_GENDER_UNSUPPORTED'; // e.g. Gender is 'other', but only male/female capacities exist
+
     // Unknown/Generic Server Error
     case UNKNOWN_ERROR = 'UNKNOWN_ERROR';
 }
