@@ -90,4 +90,7 @@ Route::group(['middleware' => 'auth:api'], function () {
 
     // Accommodation API Routes
     Route::apiResource('accommodations', AccommodationController::class);
+
+    // Mumineen Bulk Upload
+    Route::post('/mumineen/bulk', [MumineenController::class, 'bulkStore']);
 });

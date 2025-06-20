@@ -530,4 +530,116 @@ class MumineenController extends Controller
             'data' => $allMumineen
         ]);
     }
+
+    /**
+     * Bulk upload and synchronize Mumineen records from a CSV file.
+     *
+     * @OA\Post(
+     *      path="/api/mumineen/bulk",
+     *      operationId="bulkStoreMumineen",
+     *      tags={"Mumineen"},
+     *      summary="Bulk upload/synchronize Mumineen from a CSV file",
+     *      description="Upload a CSV file to add, update, and remove Mumineen records. The CSV is treated as the source of truth. Any Mumineen in the database but not in the CSV will be deleted, along with their pass preferences. Requires authentication.",
+     *      security={{"bearerAuth":{}}},
+     *      @OA\RequestBody(
+     *          required=true,
+     *          description="CSV file to upload. The first row must be a header row with column names matching the `mumineens` table fields (e.g., its_id, hof_id, fullname, etc.).",
+     *          @OA\MediaType(
+     *              mediaType="multipart/form-data",
+     *              @OA\Schema(
+     *                  required={"file"},
+     *                  @OA\Property(
+     *                      property="file",
+     *                      type="string",
+     *                      format="binary",
+     *                      description="The CSV file."
+     *                  )
+     *              )
+     *          )
+     *      ),
+     *      @OA\Response(
+     *          response=200,
+     *          description="Bulk operation completed successfully",
+     *          @OA\JsonContent(type="object", example={"success": true, "message": "Bulk upload completed successfully.", "summary": {"processed": 50, "deleted": 5, "updated_or_created": 45}})
+     *      ),
+     *      @OA\Response(
+     *          response=422,
+     *          description="Validation error (e.g., no file, wrong file type)",
+     *          @OA\JsonContent(type="object", example={"message": "The given data was invalid.", "errors": {}})
+     *      ),
+     *      @OA\Response(
+     *          response=500,
+     *          description="An error occurred during the bulk processing",
+     *          @OA\JsonContent(type="object", example={"success": false, "message": "An error occurred during bulk processing."})
+     *      )
+     * )
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function bulkStore(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'file' => 'required|file|mimes:csv,txt',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $validator->errors()], 422);
+        }
+
+        $path = $request->file('file')->getRealPath();
+        $file = file($path);
+        $csv = array_map('str_getcsv', $file);
+        $header = array_shift($csv);
+
+        $csvData = [];
+        foreach ($csv as $row) {
+            // Skip empty rows
+            if (count($row) === 1 && is_null($row[0])) continue;
+            $csvData[] = array_combine($header, $row);
+        }
+
+        try {
+            $summary = \Illuminate\Support\Facades\DB::transaction(function () use ($csvData) {
+                $csvItsIds = array_column($csvData, 'its_id');
+
+                // Find and delete Mumineen (and their pass preferences) that are not in the CSV
+                $mumineenToDelete = \App\Models\Mumineen::whereNotIn('its_id', $csvItsIds)->pluck('its_id');
+                $deletedCount = $mumineenToDelete->count();
+
+                if ($deletedCount > 0) {
+                    \App\Models\PassPreference::whereIn('its_id', $mumineenToDelete)->delete();
+                    \App\Models\Mumineen::whereIn('its_id', $mumineenToDelete)->delete();
+                }
+
+                // Update or create Mumineen from the CSV data
+                $upsertedCount = 0;
+                $fillableFields = (new \App\Models\Mumineen)->getFillable();
+                foreach ($csvData as $data) {
+                    // Ensure only fillable fields are used
+                    $filteredData = array_intersect_key($data, array_flip($fillableFields));
+                    
+                    \App\Models\Mumineen::updateOrCreate(['its_id' => $data['its_id']], $filteredData);
+                    $upsertedCount++;
+                }
+
+                return [
+                    'processed' => count($csvData),
+                    'deleted' => $deletedCount,
+                    'updated_or_created' => $upsertedCount,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Bulk upload completed successfully.',
+                'summary' => $summary,
+            ]);
+
+        } catch (\Throwable $e) {
+            // Log the error for debugging
+            error_log($e->getMessage());
+            return response()->json(['success' => false, 'message' => 'An error occurred during bulk processing: ' . $e->getMessage()], 500);
+        }
+    }
 }
