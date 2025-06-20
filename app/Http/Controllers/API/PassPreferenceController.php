@@ -1354,7 +1354,7 @@ class PassPreferenceController extends Controller
             'its_ids.*' => [
                 'required',
                 'string',
-                Rule::exists('mumineen', 'its_id'),
+                Rule::exists('mumineens', 'its_id'),
             ],
             'gender' => ['required', Rule::in(array_column(Gender::cases(), 'value'))],
         ]);
