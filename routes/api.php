@@ -33,6 +33,9 @@ Route::group(['prefix' => 'auth'], function () {
 // Route to get available pass types
 Route::get('/pass-types', [PassPreferenceController::class, 'getPassTypes']);
 
+// Mumineen by Event Route
+Route::get('/mumineen/pass-preference/breakdown', [MumineenController::class, 'getMumineenWithPassesByEvent']);
+
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });

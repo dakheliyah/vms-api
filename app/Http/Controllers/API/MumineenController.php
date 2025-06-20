@@ -464,4 +464,70 @@ class MumineenController extends Controller
             'message' => 'Family members retrieved successfully'
         ]);
     }
+
+    /**
+     * Get all Mumineen with their pass preferences for a specific event.
+     *
+     * @OA\Get(
+     *      path="/api/mumineen/pass-preference/breakdown",
+     *      operationId="getMumineenPassPreferenceBreakdown",
+     *      tags={"Mumineen"},
+     *      summary="Get all Mumineen with their pass preferences for a specific event",
+     *      description="Returns a list of all Mumineen records. For each Mumineen, it includes their pass preference details if one exists for the specified event ID.",
+     *      @OA\Parameter(
+     *          name="event_id",
+     *          in="query",
+     *          description="ID of the event to filter pass preferences by.",
+     *          required=true,
+     *          @OA\Schema(type="integer")
+     *      ),
+     *      @OA\Response(
+     *          response=200,
+     *          description="Successful operation",
+     *          @OA\JsonContent(
+     *              type="object",
+     *              @OA\Property(property="success", type="boolean", example=true),
+     *              @OA\Property(
+     *                  property="data",
+     *                  type="array",
+     *                  @OA\Items(ref="#/components/schemas/Mumineen")
+     *              )
+     *          )
+     *      ),
+     *      @OA\Response(
+     *          response=422,
+     *          description="Validation error",
+     *          @OA\JsonContent(type="object", example={"message": "The given data was invalid.", "errors": {}})
+     *      )
+     * )
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getMumineenWithPassesByEvent(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'event_id' => 'required|integer|exists:events,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation errors',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $eventId = $request->input('event_id');
+
+        $allMumineen = Mumineen::with(['passPreferences' => function ($query) use ($eventId) {
+            $query->where('event_id', $eventId)
+                  ->with(['block', 'vaazCenter']); // Eager load details from pass
+        }])->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $allMumineen
+        ]);
+    }
 }
