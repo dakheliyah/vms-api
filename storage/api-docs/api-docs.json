@@ -1243,6 +1243,43 @@
                 ]
             }
         },
+        "/api/mumineen/sample-csv": {
+            "get": {
+                "tags": [
+                    "Mumineen"
+                ],
+                "summary": "Download a sample CSV for Mumineen bulk upload",
+                "description": "Provides a CSV file with header rows for bulk uploading Mumineen data. Requires admin authentication.",
+                "operationId": "downloadSampleMumineenCsv",
+                "responses": {
+                    "200": {
+                        "description": "Sample CSV file",
+                        "content": {
+                            "text/csv": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Error generating CSV file"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden (Admin access required)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/pass-preferences/summary": {
             "get": {
                 "tags": [
@@ -2285,20 +2322,22 @@
                         "application/json": {
                             "schema": {
                                 "required": [
-                                    "its_id",
+                                    "its_ids",
                                     "is_locked"
                                 ],
                                 "properties": {
-                                    "its_id": {
-                                        "description": "An array of ITS IDs to update.",
+                                    "its_ids": {
+                                        "description": "Array of ITS IDs whose lock status is to be updated.",
                                         "type": "array",
                                         "items": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "10101010"
                                         }
                                     },
                                     "is_locked": {
-                                        "description": "The new lock status to apply to all specified ITS IDs.",
-                                        "type": "boolean"
+                                        "description": "The new lock status to apply.",
+                                        "type": "boolean",
+                                        "example": true
                                     }
                                 },
                                 "type": "object"

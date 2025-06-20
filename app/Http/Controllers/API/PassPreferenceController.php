@@ -1270,9 +1270,9 @@ class PassPreferenceController extends Controller
      *          required=true,
      *          description="An object containing an array of ITS IDs and the new lock status.",
      *          @OA\JsonContent(
-     *              required={"its_id", "is_locked"},
-     *              @OA\Property(property="its_id", type="array", @OA\Items(type="string"), description="An array of ITS IDs to update."),
-     *              @OA\Property(property="is_locked", type="boolean", description="The new lock status to apply to all specified ITS IDs.")
+     *              required={"its_ids", "is_locked"},
+     *              @OA\Property(property="its_ids", type="array", @OA\Items(type="string", example="10101010"), description="Array of ITS IDs whose lock status is to be updated."),
+     *              @OA\Property(property="is_locked", type="boolean", example=true, description="The new lock status to apply.")
      *          )
      *      ),
      *      @OA\Response(
@@ -1307,7 +1307,7 @@ class PassPreferenceController extends Controller
         $updatedCount = 0;
 
         DB::transaction(function () use ($itsIds, $isLocked, &$updatedCount) {
-            $updatedCount = PassPreference::whereIn('its_ids', $itsIds)
+            $updatedCount = PassPreference::whereIn('its_id', $itsIds)
                 ->update(['is_locked' => $isLocked]);
         });
 

@@ -685,4 +685,99 @@ class MumineenController extends Controller
             return response()->json(['success' => false, 'message' => 'An error occurred during bulk processing: ' . $e->getMessage()], 500);
         }
     }
+
+    /**
+     * @OA\Get(
+     *      path="/api/mumineen/sample-csv",
+     *      operationId="downloadSampleMumineenCsv",
+     *      tags={"Mumineen"},
+     *      summary="Download a sample CSV for Mumineen bulk upload",
+     *      description="Provides a CSV file with header rows for bulk uploading Mumineen data. Requires admin authentication.",
+     *      security={{"bearerAuth":{}}},
+     *      @OA\Response(
+     *          response=200,
+     *          description="Sample CSV file",
+     *          @OA\MediaType(
+     *              mediaType="text/csv",
+     *              @OA\Schema(type="string", format="binary")
+     *          )
+     *      ),
+     *      @OA\Response(
+     *          response=500,
+     *          description="Error generating CSV file"
+     *      ),
+     *      @OA\Response(response=401, description="Unauthenticated"),
+     *      @OA\Response(response=403, description="Forbidden (Admin access required)")
+     * )
+     */
+    public function downloadSampleCsv(Request $request)
+    {
+        if (!AuthorizationHelper::isAdmin($request)) {
+            return response()->json(['message' => 'You are not authorized to perform this action.'], 403);
+        }
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="sample_mumineen_upload.csv"',
+        ];
+
+        $columns = [
+            'its_id',
+            'hof_id',
+            'fullname',
+            'gender',
+            'age',
+            'jamaat',
+            'idara',
+            'category',
+            'prefix',
+            'title',
+            'venue_waaz',
+            'city',
+            'local_mehman',
+            'arr_place_date',
+            'flight_code',
+            'whatsapp_link_clicked',
+            'daily_trans',
+            'acc_arranged_at',
+            'acc_zone',
+            'mobile',
+            'country',
+        ];
+        
+        // Sample data row (optional, can just be headers)
+        $sampleData = [
+            '40486549', // its_id
+            '40486549', // hof_id
+            'Maleka bai S', // fullname
+            'female', // gender
+            '73', // age
+            'KHI (HASANI', // jamaat
+            '', // idara
+            '', // category
+            'MS', // prefix
+            '', // title
+            '', // venue_waaz
+            'KHI', // city
+            '0', // local_mehman (0 for No/False)
+            '', // arr_place_date
+            '', // flight_code
+            '0', // whatsapp_link_clicked (0 for No/False)
+            '0', // daily_trans (0 for No/False)
+            '', // acc_arranged_at
+            '', // acc_zone
+            '0000000000', // mobile (placeholder)
+            'PAKISTAN', // country
+        ];
+
+        $callback = function() use ($columns, $sampleData) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+            fputcsv($file, $sampleData); // Add sample data row
+            // You can add more sample rows if needed
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 }

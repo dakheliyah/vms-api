@@ -30,19 +30,6 @@ Route::group(['prefix' => 'auth'], function () {
     Route::post('me', [AuthController::class, 'me']);
 });
 
-// Route to get available pass types
-Route::get('/pass-types', [PassPreferenceController::class, 'getPassTypes']);
-
-// Mumineen by Event Route
-Route::get('/mumineen/pass-preference/breakdown', [MumineenController::class, 'getMumineenWithPassesByEvent']);
-
-// Route to download sample CSV for Mumineen bulk upload
-Route::get('/mumineen/sample-csv', [MumineenController::class, 'downloadSampleCsv']);
-
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
-
 // Mumineen API Routes
 Route::prefix('mumineen')->middleware('decrypt.its_id')->group(function () {
     Route::post('/', [MumineenController::class, 'store']);
@@ -51,6 +38,12 @@ Route::prefix('mumineen')->middleware('decrypt.its_id')->group(function () {
     Route::get('/family-by-its-id', [MumineenController::class, 'getFamilyByItsId']); // Using ?its_id=value
     
     Route::delete('/{its_id}', [MumineenController::class, 'destroy']);
+
+    // Mumineen by Event Route
+    Route::get('/pass-preference/breakdown', [MumineenController::class, 'getMumineenWithPassesByEvent']);
+    
+    // Route to download sample CSV for Mumineen bulk upload
+    Route::get('/sample-csv', [MumineenController::class, 'downloadSampleCsv']);
 });
 
 // Protected API Routes
