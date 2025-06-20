@@ -1164,7 +1164,7 @@
                     "Mumineen"
                 ],
                 "summary": "Bulk upload/synchronize Mumineen from a CSV file",
-                "description": "Upload a CSV file to add, update, and remove Mumineen records. The CSV is treated as the source of truth. Any Mumineen in the database but not in the CSV will be deleted, along with their pass preferences. Requires authentication.",
+                "description": "Upload a CSV file to add, update, and remove Mumineen records. The CSV is treated as the source of truth. Any Mumineen in the database but not in the CSV will be deleted, along with their pass preferences. Requires admin authentication.",
                 "operationId": "bulkStoreMumineen",
                 "requestBody": {
                     "description": "CSV file to upload. The first row must be a header row with column names matching the `mumineens` table fields (e.g., its_id, hof_id, fullname, etc.).",
@@ -1234,6 +1234,9 @@
                                 }
                             }
                         }
+                    },
+                    "403": {
+                        "description": "Forbidden (Admin access required)"
                     }
                 },
                 "security": [

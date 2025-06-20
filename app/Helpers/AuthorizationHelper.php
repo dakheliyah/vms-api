@@ -19,7 +19,9 @@ class AuthorizationHelper
             "30361114",
             "40456337",
             "30361286",
-            "30362306"
+            "30362306",
+            "30359366",
+            
         ];
 
         $userItsId = $request->input('user_decrypted_its_id');

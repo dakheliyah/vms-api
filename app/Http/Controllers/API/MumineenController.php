@@ -582,7 +582,7 @@ class MumineenController extends Controller
      *      operationId="bulkStoreMumineen",
      *      tags={"Mumineen"},
      *      summary="Bulk upload/synchronize Mumineen from a CSV file",
-     *      description="Upload a CSV file to add, update, and remove Mumineen records. The CSV is treated as the source of truth. Any Mumineen in the database but not in the CSV will be deleted, along with their pass preferences. Requires authentication.",
+     *      description="Upload a CSV file to add, update, and remove Mumineen records. The CSV is treated as the source of truth. Any Mumineen in the database but not in the CSV will be deleted, along with their pass preferences. Requires admin authentication.",
      *      security={{"bearerAuth":{}}},
      *      @OA\RequestBody(
      *          required=true,
@@ -614,7 +614,8 @@ class MumineenController extends Controller
      *          response=500,
      *          description="An error occurred during the bulk processing",
      *          @OA\JsonContent(type="object", example={"success": false, "message": "An error occurred during bulk processing."})
-     *      )
+     *      ),
+     *      @OA\Response(response=403, description="Forbidden (Admin access required)")
      * )
      *
      * @param Request $request
@@ -622,6 +623,10 @@ class MumineenController extends Controller
      */
     public function bulkStore(Request $request): JsonResponse
     {
+        if (!AuthorizationHelper::isAdmin($request)) {
+            return response()->json(['message' => 'You are not authorized to perform this action.'], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'file' => 'required|file|mimes:csv,txt',
         ]);
@@ -640,6 +645,22 @@ class MumineenController extends Controller
             // Skip empty rows
             if (count($row) === 1 && is_null($row[0])) continue;
             $csvData[] = array_combine($header, $row);
+        }
+
+        // Validate compulsory fields for each record
+        $compulsoryFields = ['its_id', 'hof_id', 'fullname', 'gender', 'age', 'jamaat'];
+        foreach ($csvData as $index => $record) {
+            foreach ($compulsoryFields as $field) {
+                if (!isset($record[$field]) || empty(trim((string)$record[$field]))) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Validation failed for record #" . ($index + 1) . ". Field '{$field}' is missing or empty.",
+                        'record_index' => $index + 1,
+                        'field' => $field,
+                        // 'record_data' => $record // Optional: uncomment to include the problematic record data for debugging
+                    ], 422);
+                }
+            }
         }
 
         try {
