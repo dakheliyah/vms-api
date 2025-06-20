@@ -438,10 +438,13 @@ class MumineenController extends Controller
         }
         
         // Find all members who share the same HOF ITS ID
-        $familyMembers = Mumineen::where('hof_id', $hofItsId)
-            ->orWhere('its_id', $hofItsId) // Include the head of family as well
+        $familyMembers = Mumineen::where(function ($query) use ($hofItsId) {
+                $query->where('hof_id', $hofItsId)
+                      ->orWhere('its_id', $hofItsId); // Include the head of family as well
+            })
+            ->where('age', '>', 5) // Exclude Mumineen with age <= 5
             ->with(['passPreferences' => function($query) use ($eventId) {
-                $query->where('event_id', $eventId);
+                $query->where('event_id', $eventId); // Assuming $eventId is available in this scope
             }])
             ->get();
             
