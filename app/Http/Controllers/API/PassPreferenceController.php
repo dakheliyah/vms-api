@@ -1271,7 +1271,7 @@ class PassPreferenceController extends Controller
      *          description="An object containing an array of ITS IDs and the new lock status.",
      *          @OA\JsonContent(
      *              required={"its_id", "is_locked"},
-     *              @OA\Property(property="its_id", type="array", @OA\Items(type="integer"), description="An array of ITS IDs to update."),
+     *              @OA\Property(property="its_id", type="array", @OA\Items(type="string"), description="An array of ITS IDs to update."),
      *              @OA\Property(property="is_locked", type="boolean", description="The new lock status to apply to all specified ITS IDs.")
      *          )
      *      ),
@@ -1293,7 +1293,7 @@ class PassPreferenceController extends Controller
 
         $validator = Validator::make($request->all(), [
             'its_id' => 'required|array',
-            'its_id.*' => 'integer|exists:pass_preferences,its_id',
+            'its_id.*' => 'string|exists:pass_preferences,its_id',
             'is_locked' => 'required|boolean',
         ]);
 
@@ -1331,7 +1331,7 @@ class PassPreferenceController extends Controller
      *              required={"event_id", "vaaz_center_id", "its_ids", "gender"},
      *              @OA\Property(property="event_id", type="integer", description="The ID of the event."),
      *              @OA\Property(property="vaaz_center_id", type="integer", description="The ID of the Vaaz Center to assign."),
-     *              @OA\Property(property="its_ids", type="array", @OA\Items(type="integer"), description="An array of Mumineen ITS IDs to assign."),
+     *              @OA\Property(property="its_ids", type="array", @OA\Items(type="string"), description="An array of Mumineen ITS IDs to assign."),
      *              @OA\Property(property="gender", type="string", enum={"male", "female"}, description="The gender to assign, used for capacity checking.")
      *          )
      *      ),
@@ -1351,7 +1351,7 @@ class PassPreferenceController extends Controller
             'event_id' => 'required|integer|exists:events,id',
             'vaaz_center_id' => 'required|integer|exists:vaaz_centers,id',
             'its_ids' => 'required|array',
-            'its_ids.*' => 'required|integer|exists:pass_preferences,its_id',
+            'its_ids.*' => 'required|string|exists:pass_preferences,its_id',
             'gender' => ['required', Rule::in(array_column(Gender::cases(), 'value'))],
         ]);
 

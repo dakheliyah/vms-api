@@ -2293,7 +2293,7 @@
                                         "description": "An array of ITS IDs to update.",
                                         "type": "array",
                                         "items": {
-                                            "type": "integer"
+                                            "type": "string"
                                         }
                                     },
                                     "is_locked": {
@@ -2370,7 +2370,7 @@
                                         "description": "An array of Mumineen ITS IDs to assign.",
                                         "type": "array",
                                         "items": {
-                                            "type": "integer"
+                                            "type": "string"
                                         }
                                     },
                                     "gender": {
