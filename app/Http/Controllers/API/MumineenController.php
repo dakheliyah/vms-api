@@ -62,7 +62,10 @@ class MumineenController extends Controller
             ]);
         } else {
             // If its_id is provided, return specific record (like the original show method)
-            $mumineen = Mumineen::where('its_id', $id)->first();
+            // and ensure they belong to COLOMBO or JAFFNA jamaat
+            $mumineen = Mumineen::where('its_id', $id)
+                                ->whereIn('jamaat', ['COLOMBO', 'JAFFNA'])
+                                ->first();
             
             if (!$mumineen) {
                 return response()->json([
