@@ -414,8 +414,10 @@ class MumineenController extends Controller
             ], 400);
         }
         
-        // Find the member by its_id
-        $mumineen = Mumineen::where('its_id', $id)->first();
+        // Find the member by its_id and jamaat
+        $mumineen = Mumineen::where('its_id', $id)
+                            ->whereIn('jamaat', ['COLOMBO', 'JAFFNA'])
+                            ->first();
 
         if (!$mumineen) {
             return response()->json([
@@ -434,12 +436,9 @@ class MumineenController extends Controller
             ], 404);
         }
         
-        // Find all members who share the same HOF ITS ID and belong to specific jamaats
-        $familyMembers = Mumineen::where(function ($query) use ($hofItsId) {
-                $query->where('hof_id', $hofItsId)
-                      ->orWhere('its_id', $hofItsId); // Include the head of family as well
-            })
-            ->whereIn('jamaat', ['COLOMBO', 'JAFFNA'])
+        // Find all members who share the same HOF ITS ID
+        $familyMembers = Mumineen::where('hof_id', $hofItsId)
+            ->orWhere('its_id', $hofItsId) // Include the head of family as well
             ->with(['passPreferences' => function($query) use ($eventId) {
                 $query->where('event_id', $eventId);
             }])
