@@ -705,8 +705,8 @@ class PassPreferenceController extends Controller
      *      path="/api/pass-preferences/vaaz-center",
      *      operationId="updatePassPreferenceVaazCenter",
      *      tags={"Pass Preferences"},
-     *      summary="Update the Vaaz Center for one or more pass preferences",
-     *      description="Updates the Vaaz Center for multiple pass preferences in a single transaction. If a preference had a block assigned, and that block does not belong to the new Vaaz Center, the block assignment will be removed (set to null).",
+     *      summary="Bulk update or create Vaaz Center for multiple pass preferences (Upsert)",
+     *      description="Updates the Vaaz Center for a list of pass preferences. If a preference does not exist for a given ITS ID and Event ID, it will be created. This endpoint performs authorization checks for each preference and ensures transactional integrity.",
      *      security={{"bearerAuth":{}}},
      *      @OA\RequestBody(
      *          required=true,
@@ -715,7 +715,7 @@ class PassPreferenceController extends Controller
      *              type="array",
      *              @OA\Items(
      *                  required={"its_id", "event_id", "vaaz_center_id"},
-     *                  @OA\Property(property="its_id", type="string", description="Encrypted ITS ID of the mumineen (decrypted by middleware)"),
+     *                  @OA\Property(property="its_id", type="integer", description="ITS ID of the mumineen"),
      *                  @OA\Property(property="event_id", type="integer", description="ID of the event"),
      *                  @OA\Property(property="vaaz_center_id", type="integer", description="ID of the new Vaaz center")
      *              )
@@ -729,7 +729,7 @@ class PassPreferenceController extends Controller
      *      @OA\Response(response=400, description="Invalid request body"),
      *      @OA\Response(response=401, description="Unauthenticated"),
      *      @OA\Response(response=403, description="Forbidden - User not authorized to update one or more preferences"),
-     *      @OA\Response(response=404, description="Pass Preference or Vaaz Center not found for one of the entries"),
+     *      @OA\Response(response=404, description="Vaaz Center not found for one of the entries"),
      *      @OA\Response(response=422, description="Validation error or business logic error (e.g. Vaaz center not for this event, capacity full)")
      * )
      */
@@ -785,12 +785,18 @@ class PassPreferenceController extends Controller
                                                     ->first();
 
                     if (!$passPreference) {
-                        // Use a distinct message format for easy parsing in catch block
-                        throw new \Exception("PASS_PREFERENCE_NOT_FOUND_FOR_ITS_{$itsId}_EVENT_{$eventId}", 404);
-                    }
-
-                    if ($passPreference->is_locked) {
-                        throw new \Exception("PASS_PREFERENCE_LOCKED_ITS_{$itsId}", 403);
+                        // Record doesn't exist, so instantiate a new one.
+                        // The vaaz_center_id from the current record in the request will be assigned
+                        // later in the process, after all validation and capacity checks pass.
+                        $passPreference = new PassPreference([
+                            'its_id' => $itsId,
+                            'event_id' => $eventId,
+                        ]);
+                    } else {
+                        // Record exists, check if it is locked.
+                        if ($passPreference->is_locked) {
+                            throw new \Exception("PASS_PREFERENCE_LOCKED_ITS_{$itsId}", 403);
+                        }
                     }
 
                     $newVaazCenter = VaazCenter::find($newVaazCenterId);

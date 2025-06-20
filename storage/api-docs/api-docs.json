@@ -2295,8 +2295,8 @@
                 "tags": [
                     "Pass Preferences"
                 ],
-                "summary": "Update the Vaaz Center for one or more pass preferences",
-                "description": "Updates the Vaaz Center for multiple pass preferences in a single transaction. If a preference had a block assigned, and that block does not belong to the new Vaaz Center, the block assignment will be removed (set to null).",
+                "summary": "Bulk update or create Vaaz Center for multiple pass preferences (Upsert)",
+                "description": "Updates the Vaaz Center for a list of pass preferences. If a preference does not exist for a given ITS ID and Event ID, it will be created. This endpoint performs authorization checks for each preference and ensures transactional integrity.",
                 "operationId": "updatePassPreferenceVaazCenter",
                 "requestBody": {
                     "description": "An array of objects, each with ITS ID, Event ID, and new Vaaz Center ID",
@@ -2313,8 +2313,8 @@
                                     ],
                                     "properties": {
                                         "its_id": {
-                                            "description": "Encrypted ITS ID of the mumineen (decrypted by middleware)",
-                                            "type": "string"
+                                            "description": "ITS ID of the mumineen",
+                                            "type": "integer"
                                         },
                                         "event_id": {
                                             "description": "ID of the event",
@@ -2355,7 +2355,7 @@
                         "description": "Forbidden - User not authorized to update one or more preferences"
                     },
                     "404": {
-                        "description": "Pass Preference or Vaaz Center not found for one of the entries"
+                        "description": "Vaaz Center not found for one of the entries"
                     },
                     "422": {
                         "description": "Validation error or business logic error (e.g. Vaaz center not for this event, capacity full)"
