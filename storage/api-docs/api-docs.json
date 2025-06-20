@@ -1049,6 +1049,150 @@
                 ]
             }
         },
+        "/api/mumineen/pass-preference/breakdown": {
+            "get": {
+                "tags": [
+                    "Mumineen"
+                ],
+                "summary": "Get all Mumineen with their pass preferences for a specific event",
+                "description": "Returns a list of all Mumineen records. For each Mumineen, it includes their pass preference details if one exists for the specified event ID.",
+                "operationId": "getMumineenPassPreferenceBreakdown",
+                "parameters": [
+                    {
+                        "name": "event_id",
+                        "in": "query",
+                        "description": "ID of the event to filter pass preferences by.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Mumineen"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "The given data was invalid.",
+                                    "errors": []
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/mumineen/bulk": {
+            "post": {
+                "tags": [
+                    "Mumineen"
+                ],
+                "summary": "Bulk upload/synchronize Mumineen from a CSV file",
+                "description": "Upload a CSV file to add, update, and remove Mumineen records. The CSV is treated as the source of truth. Any Mumineen in the database but not in the CSV will be deleted, along with their pass preferences. Requires authentication.",
+                "operationId": "bulkStoreMumineen",
+                "requestBody": {
+                    "description": "CSV file to upload. The first row must be a header row with column names matching the `mumineens` table fields (e.g., its_id, hof_id, fullname, etc.).",
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "file"
+                                ],
+                                "properties": {
+                                    "file": {
+                                        "description": "The CSV file.",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Bulk operation completed successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "success": true,
+                                    "message": "Bulk upload completed successfully.",
+                                    "summary": {
+                                        "processed": 50,
+                                        "deleted": 5,
+                                        "updated_or_created": 45
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error (e.g., no file, wrong file type)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "The given data was invalid.",
+                                    "errors": []
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "An error occurred during the bulk processing",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "success": false,
+                                    "message": "An error occurred during bulk processing."
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/pass-preferences/summary": {
             "get": {
                 "tags": [
