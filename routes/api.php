@@ -66,6 +66,8 @@ Route::prefix('pass-preferences')->middleware('decrypt.its_id')->group(function 
     Route::delete('/', [PassPreferenceController::class, 'destroy']);
     Route::get('/summary', [PassPreferenceController::class, 'summary']);
     Route::get('/vaaz-center-summary', [PassPreferenceController::class, 'vaazCenterSummary']);
+    Route::put('lock-preferences', [PassPreferenceController::class, 'bulkUpdateLockStatus']);
+    Route::put('bulk-assign-vaaz-center', [PassPreferenceController::class, 'bulkAssignVaazCenter']);
 });
 
 Route::group(['middleware' => 'auth:api'], function () {

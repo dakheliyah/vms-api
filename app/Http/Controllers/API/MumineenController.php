@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Helpers\AuthorizationHelper;
 use App\Models\Mumineen;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -531,6 +532,10 @@ class MumineenController extends Controller
      */
     public function getMumineenWithPassesByEvent(Request $request): JsonResponse
     {
+        if (!AuthorizationHelper::isAdmin($request)) {
+            return response()->json(['message' => 'You are not authorized to perform this action.'], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'event_id' => 'required|integer|exists:events,id',
         ]);

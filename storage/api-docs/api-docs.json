@@ -1082,7 +1082,57 @@
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/components/schemas/Mumineen"
+                                                "type": "object",
+                                                "allOf": [
+                                                    {
+                                                        "$ref": "#/components/schemas/Mumineen"
+                                                    },
+                                                    {
+                                                        "properties": {
+                                                            "pass_preferences": {
+                                                                "description": "List of pass preferences for the event, with vaaz_center object replaced by vaaz_center_name.",
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "properties": {
+                                                                        "id": {
+                                                                            "type": "integer",
+                                                                            "example": 1
+                                                                        },
+                                                                        "its_id": {
+                                                                            "type": "integer",
+                                                                            "example": 10101010
+                                                                        },
+                                                                        "event_id": {
+                                                                            "type": "integer",
+                                                                            "example": 1
+                                                                        },
+                                                                        "pass_type": {
+                                                                            "type": "string",
+                                                                            "example": "GENERAL"
+                                                                        },
+                                                                        "vaaz_center_id": {
+                                                                            "type": "integer",
+                                                                            "example": 5
+                                                                        },
+                                                                        "block_id": {
+                                                                            "type": "integer",
+                                                                            "example": 2
+                                                                        },
+                                                                        "vaaz_center_name": {
+                                                                            "type": "string",
+                                                                            "example": "Al-Masjid al-Husayni"
+                                                                        },
+                                                                        "block": {
+                                                                            "$ref": "#/components/schemas/Block"
+                                                                        }
+                                                                    },
+                                                                    "type": "object"
+                                                                }
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                ]
                                             }
                                         }
                                     },
@@ -2220,6 +2270,144 @@
                 ]
             }
         },
+        "/api/pass-preferences/lock-preferences": {
+            "put": {
+                "tags": [
+                    "Pass Preferences"
+                ],
+                "summary": "Bulk update the lock status of pass preferences",
+                "description": "Updates the `is_locked` status for multiple pass preferences in a single transaction.",
+                "operationId": "bulkUpdateLockStatus",
+                "requestBody": {
+                    "description": "An object containing an array of ITS IDs and the new lock status.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "its_id",
+                                    "is_locked"
+                                ],
+                                "properties": {
+                                    "its_id": {
+                                        "description": "An array of ITS IDs to update.",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "is_locked": {
+                                        "description": "The new lock status to apply to all specified ITS IDs.",
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Lock status updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Lock status updated for X records."
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/pass-preferences/bulk-assign-vaaz-center": {
+            "put": {
+                "tags": [
+                    "Pass Preferences"
+                ],
+                "summary": "Bulk assign multiple Mumineen to a Vaaz Center",
+                "description": "Assigns a list of Mumineen (by ITS ID) to a specified Vaaz Center for a given event. This is an admin-only endpoint that checks for gender-specific capacity.",
+                "operationId": "bulkAssignVaazCenter",
+                "requestBody": {
+                    "description": "Object containing the event ID, Vaaz Center ID, an array of ITS IDs, and the gender.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "event_id",
+                                    "vaaz_center_id",
+                                    "its_ids",
+                                    "gender"
+                                ],
+                                "properties": {
+                                    "event_id": {
+                                        "description": "The ID of the event.",
+                                        "type": "integer"
+                                    },
+                                    "vaaz_center_id": {
+                                        "description": "The ID of the Vaaz Center to assign.",
+                                        "type": "integer"
+                                    },
+                                    "its_ids": {
+                                        "description": "An array of Mumineen ITS IDs to assign.",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "gender": {
+                                        "description": "The gender to assign, used for capacity checking.",
+                                        "type": "string",
+                                        "enum": [
+                                            "male",
+                                            "female"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Assignment successful"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden (Admin access required)"
+                    },
+                    "422": {
+                        "description": "Validation error, capacity exceeded, or gender mismatch"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/vaaz-centers": {
             "get": {
                 "tags": [
@@ -2789,6 +2977,11 @@
                         "description": "ID of the assigned Vaaz center, if any",
                         "type": "integer",
                         "nullable": true
+                    },
+                    "is_locked": {
+                        "description": "Indicates if the preference is locked from changes",
+                        "type": "boolean",
+                        "example": false
                     },
                     "created_at": {
                         "description": "Timestamp of creation",

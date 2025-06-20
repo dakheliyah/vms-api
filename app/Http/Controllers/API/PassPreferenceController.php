@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Enums\Gender;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Log;
+use App\Helpers\AuthorizationHelper;
 use App\Enums\PassPreferenceErrorCode;
 use App\Models\PassPreference;
 use App\Models\VaazCenter;
@@ -393,7 +396,16 @@ class PassPreferenceController extends Controller
         }
 
         $validator = Validator::make($preferencesData, [
-            '*.its_id' => 'required|integer|distinct|unique:pass_preferences,its_id',
+            '*.its_id' => ['required', 'integer', 'distinct', 
+                function ($attribute, $value, $fail) {
+                    $existingPreference = PassPreference::where('its_id', $value)->first();
+                    if ($existingPreference && $existingPreference->is_locked) {
+                        $fail("The pass preference for ITS ID {$value} is locked and cannot be changed.");
+                    } elseif ($existingPreference) {
+                        $fail("A pass preference for ITS ID {$value} already exists. Use the update endpoint instead.");
+                    }
+                }
+            ],
             '*.event_id' => 'required|integer|exists:events,id',
             '*.pass_type' => ['nullable', Rule::enum(PassType::class)],
             '*.block_id' => 'sometimes|nullable|integer|exists:blocks,id',
@@ -552,6 +564,10 @@ class PassPreferenceController extends Controller
 
                     if (!$passPreference) {
                         throw new \Exception("Pass Preference not found for ITS: {$preferenceData['its_id']}.", 404);
+                    }
+
+                    if ($passPreference->is_locked) {
+                        throw new \Exception("Pass preference for ITS {$preferenceData['its_id']} is locked and cannot be updated.", 403);
                     }
 
                     $targetEventId = $preferenceData['event_id'] ?? $passPreference->event_id;
@@ -773,6 +789,10 @@ class PassPreferenceController extends Controller
                         throw new \Exception("PASS_PREFERENCE_NOT_FOUND_FOR_ITS_{$itsId}_EVENT_{$eventId}", 404);
                     }
 
+                    if ($passPreference->is_locked) {
+                        throw new \Exception("PASS_PREFERENCE_LOCKED_ITS_{$itsId}", 403);
+                    }
+
                     $newVaazCenter = VaazCenter::find($newVaazCenterId);
                     if (!$newVaazCenter) {
                         throw new \Exception("VAAZ_CENTER_NOT_FOUND_{$newVaazCenterId}", 404);
@@ -861,6 +881,11 @@ class PassPreferenceController extends Controller
                 $userMessage = "Pass Preference not found for ITS {$matches[1]} and Event ID {$matches[2]}.";
                 $details = ['its_id' => $matches[1], 'event_id' => $matches[2], 'resource_type' => 'PassPreference'];
                 $statusCode = 404;
+            } elseif (preg_match('/PASS_PREFERENCE_LOCKED_ITS_(\\d+)/', $message, $matches)) {
+                $errorCode = PassPreferenceErrorCode::AUTHORIZATION_FAILED;
+                $userMessage = "Pass preference for ITS {$matches[1]} is locked and cannot be updated.";
+                $details = ['its_id' => $matches[1]];
+                $statusCode = 403;
             } elseif (preg_match('/MUMINEEN_NOT_FOUND_FOR_ITS_(\d+)_EVENT_(\d+)/', $message, $matches)) {
                 $errorCode = PassPreferenceErrorCode::RESOURCE_NOT_FOUND;
                 $userMessage = "Mumineen record not found for ITS {$matches[1]} to perform capacity check for event {$matches[2]}.";
@@ -1057,6 +1082,9 @@ class PassPreferenceController extends Controller
                                                 ->lockForUpdate()
                                                 ->first();
                     if ($existing) {
+                        if ($existing->is_locked) {
+                            throw new \Exception("Pass preference for ITS {$itsId} is locked and cannot be changed.");
+                        }
                         throw new \Exception("Pass preference for ITS {$itsId} and Event {$eventId} already exists.");
                     }
 
@@ -1228,6 +1256,175 @@ class PassPreferenceController extends Controller
     public function getAvailablePassTypes(): JsonResponse
     {
         return response()->json(array_column(PassType::cases(), 'value'));
+    }
+
+    /**
+     * @OA\Put(
+     *      path="/api/pass-preferences/lock-preferences",
+     *      operationId="bulkUpdateLockStatus",
+     *      tags={"Pass Preferences"},
+     *      summary="Bulk update the lock status of pass preferences",
+     *      description="Updates the `is_locked` status for multiple pass preferences in a single transaction.",
+     *      security={{"bearerAuth":{}}},
+     *      @OA\RequestBody(
+     *          required=true,
+     *          description="An object containing an array of ITS IDs and the new lock status.",
+     *          @OA\JsonContent(
+     *              required={"its_id", "is_locked"},
+     *              @OA\Property(property="its_id", type="array", @OA\Items(type="integer"), description="An array of ITS IDs to update."),
+     *              @OA\Property(property="is_locked", type="boolean", description="The new lock status to apply to all specified ITS IDs.")
+     *          )
+     *      ),
+     *      @OA\Response(
+     *          response=200,
+     *          description="Lock status updated successfully",
+     *          @OA\JsonContent(type="object", example={"message": "Lock status updated for X records."})
+     *      ),
+     *      @OA\Response(response=401, description="Unauthenticated"),
+     *      @OA\Response(response=403, description="Forbidden"),
+     *      @OA\Response(response=422, description="Validation error")
+     * )
+     */
+    public function bulkUpdateLockStatus(Request $request): JsonResponse
+    {
+        if (!AuthorizationHelper::isAdmin($request)) {
+            return response()->json(['message' => 'You are not authorized to perform this action.'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'its_id' => 'required|array',
+            'its_id.*' => 'integer|exists:pass_preferences,its_id',
+            'is_locked' => 'required|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
+
+        $validatedData = $validator->validated();
+        $itsIds = $validatedData['its_id'];
+        $isLocked = $validatedData['is_locked'];
+        $updatedCount = 0;
+
+        DB::transaction(function () use ($itsIds, $isLocked, &$updatedCount) {
+            $updatedCount = PassPreference::whereIn('its_id', $itsIds)
+                ->update(['is_locked' => $isLocked]);
+        });
+
+        return response()->json(['message' => "Lock status updated for {$updatedCount} records."]);
+    }
+
+
+
+    /**
+     * @OA\Put(
+     *      path="/api/pass-preferences/bulk-assign-vaaz-center",
+     *      operationId="bulkAssignVaazCenter",
+     *      tags={"Pass Preferences"},
+     *      summary="Bulk assign multiple Mumineen to a Vaaz Center",
+     *      description="Assigns a list of Mumineen (by ITS ID) to a specified Vaaz Center for a given event. This is an admin-only endpoint that checks for gender-specific capacity.",
+     *      security={{"bearerAuth":{}}},
+     *      @OA\RequestBody(
+     *          required=true,
+     *          description="Object containing the event ID, Vaaz Center ID, an array of ITS IDs, and the gender.",
+     *          @OA\JsonContent(
+     *              required={"event_id", "vaaz_center_id", "its_ids", "gender"},
+     *              @OA\Property(property="event_id", type="integer", description="The ID of the event."),
+     *              @OA\Property(property="vaaz_center_id", type="integer", description="The ID of the Vaaz Center to assign."),
+     *              @OA\Property(property="its_ids", type="array", @OA\Items(type="integer"), description="An array of Mumineen ITS IDs to assign."),
+     *              @OA\Property(property="gender", type="string", enum={"male", "female"}, description="The gender to assign, used for capacity checking.")
+     *          )
+     *      ),
+     *      @OA\Response(response=200, description="Assignment successful"),
+     *      @OA\Response(response=401, description="Unauthenticated"),
+     *      @OA\Response(response=403, description="Forbidden (Admin access required)"),
+     *      @OA\Response(response=422, description="Validation error, capacity exceeded, or gender mismatch")
+     * )
+     */
+    public function bulkAssignVaazCenter(Request $request): JsonResponse
+    {
+        if (!AuthorizationHelper::isAdmin($request)) {
+            return response()->json(['message' => 'You are not authorized to perform this action.'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'event_id' => 'required|integer|exists:events,id',
+            'vaaz_center_id' => 'required|integer|exists:vaaz_centers,id',
+            'its_ids' => 'required|array',
+            'its_ids.*' => 'required|integer|exists:pass_preferences,its_id',
+            'gender' => ['required', Rule::in(array_column(Gender::cases(), 'value'))],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
+
+        $validatedData = $validator->validated();
+        $eventId = $validatedData['event_id'];
+        $vaazCenterId = $validatedData['vaaz_center_id'];
+        $itsIds = array_unique($validatedData['its_ids']);
+        $gender = $validatedData['gender'];
+
+        // Verify that all provided ITS IDs match the specified gender
+        $mumineenWithMatchingGenderCount = Mumineen::whereIn('its_id', $itsIds)->where('gender', $gender)->count();
+        if ($mumineenWithMatchingGenderCount !== count($itsIds)) {
+            return response()->json(['message' => 'One or more provided ITS IDs do not match the specified gender or do not exist.'], 422);
+        }
+
+        $updatedCount = 0;
+
+        try {
+            DB::transaction(function () use ($eventId, $vaazCenterId, $itsIds, $gender, &$updatedCount) {
+                $vaazCenter = VaazCenter::lockForUpdate()->find($vaazCenterId);
+                if (!$vaazCenter) {
+                    // This should ideally be caught by validation, but as a safeguard:
+                    throw new \Exception('Vaaz Center not found.', 404);
+                }
+
+                $capacity = ($gender === Gender::MALE->value) ? $vaazCenter->male_capacity : $vaazCenter->female_capacity;
+
+                // Capacity Check
+                $currentOccupancy = PassPreference::where('event_id', $eventId)
+                    ->where('vaaz_center_id', $vaazCenterId)
+                    ->whereHas('mumineen', function ($query) use ($gender) {
+                        $query->where('gender', $gender);
+                    })
+                    ->count();
+                
+                $newAssignmentsCount = PassPreference::whereIn('its_id', $itsIds)
+                    ->where('event_id', $eventId)
+                    ->where(function ($query) use ($vaazCenterId) {
+                        $query->where('vaaz_center_id', '!=', $vaazCenterId)->orWhereNull('vaaz_center_id');
+                    })
+                    ->count();
+
+                if (($currentOccupancy + $newAssignmentsCount) > $capacity) {
+                    throw new \Exception(json_encode([
+                        'message' => 'Assigning these Mumineen would exceed the Vaaz Center capacity for the specified gender.',
+                        'gender' => $gender,
+                        'capacity' => $capacity,
+                        'current_occupancy' => $currentOccupancy,
+                        'new_assignments' => $newAssignmentsCount,
+                    ]), 422);
+                }
+
+                $updatedCount = PassPreference::whereIn('its_id', $itsIds)
+                    ->where('event_id', $eventId)
+                    ->update(['vaaz_center_id' => $vaazCenterId]);
+            });
+
+            return response()->json(['message' => "Successfully assigned {$updatedCount} Mumineen to the Vaaz Center."]);
+
+        } catch (\Exception $e) {
+            $statusCode = $e->getCode() == 422 || $e->getCode() == 404 ? $e->getCode() : 500;
+            $message = $e->getCode() == 422 ? json_decode($e->getMessage(), true) : ['message' => $e->getMessage()];
+            if ($statusCode === 500) {
+                 // Log internal server errors for debugging
+                 Log::error('Bulk assign Vaaz Center error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+                 $message = ['message' => 'An internal server error occurred.'];
+            }
+            return response()->json($message, $statusCode);
+        }
     }
 
     /**

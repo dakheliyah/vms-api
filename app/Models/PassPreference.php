@@ -20,6 +20,7 @@ use App\Enums\PassType;
  *     @OA\Property(property="pass_type", type="string", enum={"RAHAT", "CHAIR", "GENERAL", "MUM_WITH_KIDS"}, description="Type of pass allocated"),
  *     @OA\Property(property="block_id", type="integer", nullable=true, description="ID of the assigned block, if any"),
  *     @OA\Property(property="vaaz_center_id", type="integer", nullable=true, description="ID of the assigned Vaaz center, if any"),
+ *     @OA\Property(property="is_locked", type="boolean", description="Indicates if the preference is locked from changes", example=false),
  *     @OA\Property(property="created_at", type="string", format="date-time", description="Timestamp of creation"),
  *     @OA\Property(property="updated_at", type="string", format="date-time", description="Timestamp of last update"),
  *     @OA\Property(property="block", type="object", nullable=true, ref="#/components/schemas/Block", description="Associated Block model"),
@@ -42,6 +43,7 @@ class PassPreference extends Model
         'pass_type',
         'block_id',
         'vaaz_center_id',
+        'is_locked',
     ];
 
     /**
@@ -51,6 +53,7 @@ class PassPreference extends Model
      */
     protected $casts = [
         'pass_type' => PassType::class,
+        'is_locked' => 'boolean',
     ];
 
     /**
