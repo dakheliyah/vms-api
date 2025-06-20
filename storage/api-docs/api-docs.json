@@ -1645,7 +1645,7 @@
                     "Pass Preferences"
                 ],
                 "summary": "Delete a pass preference",
-                "description": "Deletes a pass preference record identified by its ITS ID and Event ID. Both ITS ID and Event ID are expected as query parameters. The ITS ID is expected to be encrypted.",
+                "description": "Deletes a pass preference record identified by its ITS ID. The ITS ID in the body is expected to be encrypted.",
                 "operationId": "deletePassPreference",
                 "parameters": [
                     {
@@ -1730,9 +1730,6 @@
                                 "example": {
                                     "its_id": [
                                         "The its id field is required."
-                                    ],
-                                    "event_id": [
-                                        "The event id field is required."
                                     ]
                                 }
                             }
