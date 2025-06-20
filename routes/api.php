@@ -36,6 +36,9 @@ Route::get('/pass-types', [PassPreferenceController::class, 'getPassTypes']);
 // Mumineen by Event Route
 Route::get('/mumineen/pass-preference/breakdown', [MumineenController::class, 'getMumineenWithPassesByEvent']);
 
+// Route to download sample CSV for Mumineen bulk upload
+Route::get('/mumineen/sample-csv', [MumineenController::class, 'downloadSampleCsv']);
+
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });

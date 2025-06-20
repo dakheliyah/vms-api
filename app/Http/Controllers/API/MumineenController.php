@@ -414,10 +414,8 @@ class MumineenController extends Controller
             ], 400);
         }
         
-        // Find the member by its_id and jamaat
-        $mumineen = Mumineen::where('its_id', $id)
-                            ->whereIn('jamaat', ['COLOMBO', 'JAFFNA'])
-                            ->first();
+        // Find the member by its_id
+        $mumineen = Mumineen::where('its_id', $id)->first();
 
         if (!$mumineen) {
             return response()->json([
@@ -524,21 +522,8 @@ class MumineenController extends Controller
 
         $allMumineen = Mumineen::with(['passPreferences' => function ($query) use ($eventId) {
             $query->where('event_id', $eventId)
-                  ->with([
-                      'block', // Assuming full block object is fine for now
-                      'vaazCenter:id,name' // Eager load only id and name for vaazCenter
-                  ]);
+                  ->with(['block', 'vaazCenter']); // Eager load details from pass
         }])->get();
-
-        // Add vaaz_center_name to each pass preference and remove the vaazCenter object
-        $allMumineen->each(function ($mumineen) {
-            if ($mumineen->passPreferences) {
-                $mumineen->passPreferences->each(function ($preference) {
-                    $preference->vaaz_center_name = optional($preference->vaazCenter)->name;
-                    unset($preference->vaazCenter); // Remove the vaazCenter object after extracting the name
-                });
-            }
-        });
 
         return response()->json([
             'success' => true,
