@@ -16,12 +16,13 @@ class AuthorizationHelper
     {
         // TODO: Move this to a configuration file or a database table for better management.
         $adminItsIds = [
-            "30361114",
-            "40456337",
-            "30361286",
-            "30362306",
-            "30359366",
-            
+            "30361114", // ITS53
+            "40456337", // ITS53
+            "30361286", // ITS53
+            "30362306", // Hamza bhai Ajmer
+            "30359366", // Huzefa bhai Frutti
+            "20323929" // Ibrahim Bs
+
         ];
 
         $userItsId = $request->input('user_decrypted_its_id');
