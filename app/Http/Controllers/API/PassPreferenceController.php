@@ -1323,13 +1323,13 @@ class PassPreferenceController extends Controller
 
         // Manually log this bulk action
         if ($updatedCount > 0) {
-            $adminUser = \App\Models\User::where('its_id', $request->input('user_decrypted_its_id'))->first();
+            $adminMumineen = \App\Models\Mumineen::find($request->input('user_decrypted_its_id'));
 
             Activity::create([
                 'log_name' => 'admin',
                 'description' => $isLocked ? 'Bulk locked pass preferences' : 'Bulk unlocked pass preferences',
-                'causer_type' => $adminUser ? get_class($adminUser) : null,
-                'causer_id' => $adminUser ? $adminUser->id : null,
+                'causer_type' => $adminMumineen ? get_class($adminMumineen) : null,
+                'causer_id' => $adminMumineen ? $adminMumineen->its_id : null,
                 'properties' => [
                     'endpoint' => $request->path(),
                     'admin_its_id' => $request->input('user_decrypted_its_id'),
@@ -1498,15 +1498,15 @@ class PassPreferenceController extends Controller
         }
 
         if ($updatedCount > 0) {
-            $adminUser = \App\Models\User::where('its_id', $request->input('user_decrypted_its_id'))->first();
+            $adminMumineen = \App\Models\Mumineen::find($request->input('user_decrypted_its_id'));
 
             Activity::create([
                 'log_name' => 'admin',
                 'description' => "Bulk assigned {$updatedCount} pass preferences.",
                 'subject_type' => VaazCenter::class,
                 'subject_id' => $vaazCenterId,
-                'causer_type' => $adminUser ? get_class($adminUser) : null,
-                'causer_id' => $adminUser ? $adminUser->id : null,
+                'causer_type' => $adminMumineen ? get_class($adminMumineen) : null,
+                'causer_id' => $adminMumineen ? $adminMumineen->its_id : null,
                 'properties' => [
                     'endpoint' => $request->path(),
                     'admin_its_id' => $request->input('user_decrypted_its_id'),

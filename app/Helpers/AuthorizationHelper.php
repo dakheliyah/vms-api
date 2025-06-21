@@ -22,7 +22,8 @@ class AuthorizationHelper
             "30362306", // Hamza bhai Ajmer
             "30359366", // Huzefa bhai Frutti
             "20323929", // Ibrahim Bs
-            "30362765"  // Huzefa bhai Murtaza
+            "30362765",  // Huzefa bhai Murtaza
+            "30359367"  // Aliasger bhai Frutti
         ];
 
         $userItsId = $request->input('user_decrypted_its_id');

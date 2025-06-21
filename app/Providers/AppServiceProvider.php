@@ -35,7 +35,8 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Relation::morphMap([
-            'admin' => User::class,
+            // Map the legacy 'admin' string to the Mumineen model
+            'admin' => \App\Models\Mumineen::class,
         ]);
         //
     }
