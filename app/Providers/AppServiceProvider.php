@@ -5,6 +5,8 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\DB;
 use Doctrine\DBAL\Types\Type;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use App\Models\User;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -29,12 +31,12 @@ class AppServiceProvider extends ServiceProvider
             if (!Type::hasType('enum')) {
                 Type::addType('enum', \Doctrine\DBAL\Types\StringType::class);
             }
-            // For PostgreSQL, or if the above doesn't work alone:
-            $platform = DB::connection()->getDoctrineSchemaManager()->getDatabasePlatform();
-            if (!$platform->hasDoctrineTypeMappingFor('enum')) {
-                $platform->registerDoctrineTypeMapping('enum', 'string');
-            }
+            DB::connection()->getDoctrineSchemaManager()->getDatabasePlatform()->registerDoctrineTypeMapping('enum', 'string');
         }
+
+        Relation::morphMap([
+            'admin' => User::class,
+        ]);
         //
     }
 }

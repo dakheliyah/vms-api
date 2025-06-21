@@ -4,6 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Contracts\Activity;
+use App\Helpers\AuthorizationHelper;
 use App\Models\Block;
 use App\Models\VaazCenter;
 use App\Models\Event;
@@ -30,7 +34,7 @@ use App\Enums\PassType;
  */
 class PassPreference extends Model
 {
-        use HasFactory;
+    use HasFactory, LogsActivity;
 
     /**
      * The attributes that are mass assignable.
@@ -45,6 +49,20 @@ class PassPreference extends Model
         'vaaz_center_id',
         'is_locked',
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        $logOptions = LogOptions::defaults()
+            ->logOnly(['vaaz_center_id', 'pass_type', 'is_locked'])
+            ->logOnlyDirty()
+            ->setDescriptionForEvent(fn(string $eventName) => "Pass Preference has been {$eventName}");
+
+        if (AuthorizationHelper::isAdmin(request())) {
+            $logOptions->useLogName('admin');
+        }
+
+        return $logOptions;
+    }
 
     /**
      * The attributes that should be cast.

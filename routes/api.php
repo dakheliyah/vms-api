@@ -77,6 +77,9 @@ Route::group(['prefix' => 'hizbe-saifee-groups', 'middleware' => 'decrypt.its_id
     Route::delete('/{hizbeSaifeeGroup}', [HizbeSaifeeGroupController::class, 'destroy']);
 });
 
+// Admin Activity Log Route
+Route::get('/admin/activity-logs', [\App\Http\Controllers\API\ActivityLogController::class, 'getAdminActions'])->middleware('decrypt.its_id');
+
 Route::group(['middleware' => 'auth:api'], function () {
     // Miqaat API Routes
     Route::apiResource('miqaats', MiqaatController::class);
