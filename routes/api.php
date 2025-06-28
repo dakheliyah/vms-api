@@ -56,6 +56,10 @@ Route::prefix('vaaz-center')->middleware('decrypt.its_id')->group(function () {
     Route::get('/', [VaazCenterController::class, 'indexOrShow']);
 });
 
+Route::prefix('events')->middleware('decrypt.its_id')->group(function () {
+    Route::get('/', [EventController::class, 'indexOrShow']);
+});
+
 // Protected API Routes
 // Public Pass Preference Routes (No JWT Auth required, but can use Token header)
 Route::prefix('pass-preferences')->middleware('decrypt.its_id')->group(function () {
@@ -89,9 +93,6 @@ Route::get('/admin/activity-logs', [\App\Http\Controllers\API\ActivityLogControl
 Route::group(['middleware' => 'auth:api'], function () {
     // Miqaat API Routes
     Route::apiResource('miqaats', MiqaatController::class);
-
-    // Event API Routes
-    Route::apiResource('events', EventController::class);
 
     // Vaaz Center API Routes
     // Route::prefix('vaaz-centers')->group(function () {
