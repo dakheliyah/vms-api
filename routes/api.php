@@ -54,10 +54,14 @@ Route::prefix('mumineen')->middleware('decrypt.its_id')->group(function () {
 
 Route::prefix('vaaz-center')->middleware('decrypt.its_id')->group(function () {
     Route::get('/', [VaazCenterController::class, 'indexOrShow']);
+    Route::post('/', [VaazCenterController::class, 'store']);
+    Route::put('/', [VaazCenterController::class, 'update']);
 });
 
 Route::prefix('events')->middleware('decrypt.its_id')->group(function () {
     Route::get('/', [EventController::class, 'indexOrShow']);
+    Route::post('/', [EventController::class, 'store']);
+    Route::put('/', [EventController::class, 'update']);
 });
 
 // Protected API Routes

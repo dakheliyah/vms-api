@@ -1057,172 +1057,6 @@
             }
         },
         "/api/mumineen/{its_id}": {
-            "get": {
-                "tags": [
-                    "Mumineen"
-                ],
-                "summary": "Get a specific Mumineen record",
-                "description": "Returns a specific Mumineen record by their encrypted ITS ID. Requires authentication.",
-                "operationId": "getMumineen",
-                "parameters": [
-                    {
-                        "name": "its_id",
-                        "in": "path",
-                        "description": "Encrypted ITS ID of the Mumineen to retrieve.",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful operation",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Mumineen"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthenticated",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object"
-                                },
-                                "example": {
-                                    "message": "Unauthenticated."
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Mumineen not found",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object"
-                                },
-                                "example": {
-                                    "success": false,
-                                    "message": "Mumineen not found"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            },
-            "put": {
-                "tags": [
-                    "Mumineen"
-                ],
-                "summary": "Update a Mumineen record",
-                "description": "Updates a specific Mumineen record by their encrypted ITS ID. Requires authentication.",
-                "operationId": "updateMumineen",
-                "parameters": [
-                    {
-                        "name": "its_id",
-                        "in": "path",
-                        "description": "Encrypted ITS ID of the Mumineen to update.",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "description": "Mumineen data to update.",
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "properties": {
-                                    "hof_id": {
-                                        "description": "Encrypted ITS ID of the Head of Family.",
-                                        "type": "string",
-                                        "example": "encrypted_string"
-                                    },
-                                    "full_name": {
-                                        "type": "string",
-                                        "example": "John Doe"
-                                    },
-                                    "gender": {
-                                        "type": "string",
-                                        "enum": [
-                                            "male",
-                                            "female"
-                                        ],
-                                        "example": "male"
-                                    },
-                                    "age": {
-                                        "type": "integer",
-                                        "example": 31
-                                    },
-                                    "mobile": {
-                                        "type": "string",
-                                        "example": "1234567890"
-                                    },
-                                    "country": {
-                                        "type": "string",
-                                        "example": "United States"
-                                    },
-                                    "hizbe_saifee_group_id": {
-                                        "description": "ID of the assigned Hizbe Saifee Group",
-                                        "type": "integer",
-                                        "example": 1,
-                                        "nullable": true
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Mumineen record updated successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Mumineen"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthenticated",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object"
-                                },
-                                "example": {
-                                    "message": "Unauthenticated."
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Mumineen not found"
-                    },
-                    "422": {
-                        "description": "Validation error"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            },
             "delete": {
                 "tags": [
                     "Mumineen"
@@ -1280,7 +1114,7 @@
                 ]
             }
         },
-        "/api/mumineen/family-by-its-id/{its_id}": {
+        "/api/mumineen/family-by-its-id": {
             "get": {
                 "tags": [
                     "Mumineen"
@@ -1291,7 +1125,7 @@
                 "parameters": [
                     {
                         "name": "its_id",
-                        "in": "path",
+                        "in": "query",
                         "description": "Encrypted ITS ID of a family member.",
                         "required": true,
                         "schema": {
@@ -1354,14 +1188,14 @@
                 "tags": [
                     "Mumineen"
                 ],
-                "summary": "Get all Mumineen with their pass preferences for a specific event",
-                "description": "Returns a list of all Mumineen records. For each Mumineen, it includes their pass preference details if one exists for the specified event ID.",
-                "operationId": "getMumineenPassPreferenceBreakdown",
+                "summary": "Get Mumineen with pass preferences for an event",
+                "description": "Retrieves a list of Mumineen who have pass preferences for a specific event, including their pass details. Requires authentication.",
+                "operationId": "getMumineenWithPassesByEvent",
                 "parameters": [
                     {
                         "name": "event_id",
                         "in": "query",
-                        "description": "ID of the event to filter pass preferences by.",
+                        "description": "ID of the event to filter by.",
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -1374,88 +1208,35 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "object",
-                                                "allOf": [
-                                                    {
-                                                        "$ref": "#/components/schemas/Mumineen"
-                                                    },
-                                                    {
-                                                        "properties": {
-                                                            "pass_preferences": {
-                                                                "description": "List of pass preferences for the event, with vaaz_center object replaced by vaaz_center_name.",
-                                                                "type": "array",
-                                                                "items": {
-                                                                    "properties": {
-                                                                        "id": {
-                                                                            "type": "integer",
-                                                                            "example": 1
-                                                                        },
-                                                                        "its_id": {
-                                                                            "type": "integer",
-                                                                            "example": 10101010
-                                                                        },
-                                                                        "event_id": {
-                                                                            "type": "integer",
-                                                                            "example": 1
-                                                                        },
-                                                                        "pass_type": {
-                                                                            "type": "string",
-                                                                            "example": "GENERAL"
-                                                                        },
-                                                                        "vaaz_center_id": {
-                                                                            "type": "integer",
-                                                                            "example": 5
-                                                                        },
-                                                                        "block_id": {
-                                                                            "type": "integer",
-                                                                            "example": 2
-                                                                        },
-                                                                        "vaaz_center_name": {
-                                                                            "type": "string",
-                                                                            "example": "Al-Masjid al-Husayni"
-                                                                        },
-                                                                        "block": {
-                                                                            "$ref": "#/components/schemas/Block"
-                                                                        }
-                                                                    },
-                                                                    "type": "object"
-                                                                }
-                                                            }
-                                                        },
-                                                        "type": "object"
-                                                    }
-                                                ]
-                                            }
-                                        }
-                                    },
                                     "type": "object"
+                                },
+                                "example": {
+                                    "success": true,
+                                    "data": []
                                 }
                             }
                         }
                     },
-                    "422": {
-                        "description": "Validation error",
+                    "400": {
+                        "description": "Bad Request (e.g., missing event_id)",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "type": "object"
                                 },
                                 "example": {
-                                    "message": "The given data was invalid.",
-                                    "errors": []
+                                    "success": false,
+                                    "message": "Event ID is required."
                                 }
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/api/mumineen/bulk": {
