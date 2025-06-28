@@ -31,6 +31,9 @@ Route::group(['prefix' => 'auth'], function () {
     Route::post('me', [AuthController::class, 'me']);
 });
 
+// Mumineen Bulk Upload
+Route::post('/mumineen/bulk', [MumineenController::class, 'bulkStore']);
+
 // Mumineen API Routes
 Route::prefix('mumineen')->middleware('decrypt.its_id')->group(function () {
     Route::post('/', [MumineenController::class, 'store']);
@@ -45,9 +48,12 @@ Route::prefix('mumineen')->middleware('decrypt.its_id')->group(function () {
     
     // Route to download sample CSV for Mumineen bulk upload
     Route::get('/sample-csv', [MumineenController::class, 'downloadSampleCsv']);
-    // Mumineen Bulk Upload
-    Route::post('/bulk', [MumineenController::class, 'bulkStore']);
     Route::post('/auto-assign-groups', [MumineenController::class, 'autoAssignHizbeSaifeeGroups']);
+});
+
+
+Route::prefix('vaaz-center')->middleware('decrypt.its_id')->group(function () {
+    Route::get('/', [VaazCenterController::class, 'indexOrShow']);
 });
 
 // Protected API Routes
@@ -88,22 +94,22 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::apiResource('events', EventController::class);
 
     // Vaaz Center API Routes
-    Route::prefix('vaaz-centers')->group(function () {
-        Route::get('/', [VaazCenterController::class, 'indexOrShow']);
-        Route::post('/', [VaazCenterController::class, 'store']);
-        Route::put('/', [VaazCenterController::class, 'update']);
-        Route::delete('/', [VaazCenterController::class, 'destroy']);
-    });
+    // Route::prefix('vaaz-centers')->group(function () {
+    //     Route::get('/', [VaazCenterController::class, 'indexOrShow']);
+    //     Route::post('/', [VaazCenterController::class, 'store']);
+    //     Route::put('/', [VaazCenterController::class, 'update']);
+    //     Route::delete('/', [VaazCenterController::class, 'destroy']);
+    // });
 
     // Block API Routes
-    Route::prefix('blocks')->group(function () {
-        Route::get('/', [BlockController::class, 'index']);
-        Route::post('/', [BlockController::class, 'store']);
-        Route::put('/', [BlockController::class, 'update']);
-        Route::delete('/', [BlockController::class, 'destroy']);
-    });
+    // Route::prefix('blocks')->group(function () {
+    //     Route::get('/', [BlockController::class, 'index']);
+    //     Route::post('/', [BlockController::class, 'store']);
+    //     Route::put('/', [BlockController::class, 'update']);
+    //     Route::delete('/', [BlockController::class, 'destroy']);
+    // });
 
     // Accommodation API Routes
-    Route::apiResource('accommodations', AccommodationController::class);
+    // Route::apiResource('accommodations', AccommodationController::class);
 
 });
