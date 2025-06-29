@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Helpers\AuthorizationHelper;
 use App\Models\Event;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -30,6 +31,9 @@ class EventController extends Controller
      */
     public function store(Request $request)
     {
+        if (!AuthorizationHelper::isAdmin($request)) {
+            return response()->json(['message' => 'You are not authorized to perform this action.'], 403);
+        }
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:events,name',
             'status' => 'sometimes|string|in:active,inactive,completed',
@@ -49,6 +53,9 @@ class EventController extends Controller
      */
     public function update(Request $request)
     {
+        if (!AuthorizationHelper::isAdmin($request)) {
+            return response()->json(['message' => 'You are not authorized to perform this action.'], 403);
+        }
         if (!$request->has('id')) {
             return response()->json(['message' => 'Event ID is required'], 400);
         }
@@ -76,6 +83,9 @@ class EventController extends Controller
      */
     public function destroy(Request $request)
     {
+        if (!AuthorizationHelper::isAdmin($request)) {
+            return response()->json(['message' => 'You are not authorized to perform this action.'], 403);
+        }
         if (!$request->has('id')) {
             return response()->json(['message' => 'Event ID is required'], 400);
         }

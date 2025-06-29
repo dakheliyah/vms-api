@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Helpers\AuthorizationHelper;
 use App\Models\VaazCenter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -116,6 +117,9 @@ class VaazCenterController extends Controller
      */
     public function store(Request $request)
     {
+        if (!AuthorizationHelper::isAdmin($request)) {
+            return response()->json(['message' => 'You are not authorized to perform this action.'], 403);
+        }
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'est_capacity' => 'required|integer',
@@ -186,6 +190,9 @@ class VaazCenterController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if (!AuthorizationHelper::isAdmin($request)) {
+            return response()->json(['message' => 'You are not authorized to perform this action.'], 403);
+        }
         $vaazCenter = VaazCenter::find($id);
         if (!$vaazCenter) {
             return response()->json(['message' => 'Vaaz Center not found'], 404);
@@ -241,8 +248,11 @@ class VaazCenterController extends Controller
      *      )
      * )
      */
-    public function destroy($id)
+    public function destroy($id, Request $request)
     {
+        if (!AuthorizationHelper::isAdmin($request)) {
+            return response()->json(['message' => 'You are not authorized to perform this action.'], 403);
+        }
         $vaazCenter = VaazCenter::find($id);
         if (!$vaazCenter) {
             return response()->json(['message' => 'Vaaz Center not found'], 404);
