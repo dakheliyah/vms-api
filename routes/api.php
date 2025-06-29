@@ -59,7 +59,7 @@ Route::prefix('vaaz-center')->middleware('decrypt.its_id')->group(function () {
 });
 
 Route::prefix('events')->middleware('decrypt.its_id')->group(function () {
-    Route::get('/', [EventController::class, 'indexOrShow']);
+    Route::get('/', [EventController::class, 'index']);
     Route::post('/', [EventController::class, 'store']);
     Route::put('/', [EventController::class, 'update']);
 });
