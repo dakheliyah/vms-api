@@ -120,7 +120,7 @@ class VaazCenterController extends Controller
         if (!AuthorizationHelper::isAdmin($request)) {
             return response()->json(['message' => 'You are not authorized to perform this action.'], 403);
         }
-        $validator = Validator::make($request->all(), [
+        $validator = Validator::make($request->except('id'), [
             'name' => 'required|string|max:255',
             'est_capacity' => 'required|integer',
             'male_capacity' => 'nullable|integer|min:0',
